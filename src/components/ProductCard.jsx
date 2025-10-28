@@ -15,7 +15,7 @@ const MotionBox = motion(Box);
  * Example usage:
  * <ProductCard product={productData} onClick={handleProductClick} />
  */
-function ProductCard({ product, onClick, usePlaceholder = true }) {
+function ProductCard({ product, onClick, usePlaceholder = false }) {
   const [imageError, setImageError] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
