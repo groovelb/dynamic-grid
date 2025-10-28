@@ -1,20 +1,39 @@
 import { useState } from 'react';
 import Header from './components/Header';
-import ProductGrid from './components/ProductGrid';
+import DynamicGrid from './components/DynamicGrid';
 import products from './data/products';
 import './App.css';
 
 function App() {
   const [currentFilter, setCurrentFilter] = useState('all');
-  const [columns, setColumns] = useState(3);
+  const [zoomLevel, setZoomLevel] = useState(0);
+
+  /** 확대 레벨에 따른 컬럼 수 계산 */
+  const getColumns = () => {
+    switch (zoomLevel) {
+      case 0:
+        return 8;
+      case 1:
+        return 6;
+      case 2:
+        return 4;
+      default:
+        return 8;
+    }
+  };
 
   const handleFilterChange = (filter) => {
     setCurrentFilter(filter);
   };
 
   const handleNavigate = () => {
-    /** TODO: 네비게이션 기능 구현 (그리드 컬럼 수 조절 / 백버튼) */
-    console.log('Navigation clicked');
+    if (zoomLevel === 2) {
+      /** 최대 확대 상태에서 클릭 시 초기 상태로 리셋 */
+      setZoomLevel(0);
+    } else {
+      /** + 버튼 클릭 시 확대 (최대 2번) */
+      setZoomLevel((prev) => Math.min(prev + 1, 2));
+    }
   };
 
   const handleCartClick = () => {
@@ -38,12 +57,13 @@ function App() {
         onFilterChange={ handleFilterChange }
         onCartClick={ handleCartClick }
         currentFilter={ currentFilter }
+        isZoomedIn={ zoomLevel === 2 }
       />
       <main className="main">
-        <ProductGrid
+        <DynamicGrid
           products={ filteredProducts }
           onProductClick={ handleProductClick }
-          columns={ columns }
+          columns={ getColumns() }
         />
       </main>
     </div>

@@ -1,19 +1,19 @@
 import ProductCard from './ProductCard';
 
 /**
- * ProductGrid 컴포넌트
+ * DynamicGrid 컴포넌트
  *
  * Props:
  * @param {array} products - 제품 데이터 배열 [Required]
  * @param {function} onProductClick - 제품 클릭 핸들러 [Optional]
- * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 3]
+ * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 8]
  *
  * Example usage:
- * <ProductGrid products={productList} onProductClick={handleClick} columns={3} />
+ * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} />
  */
-function ProductGrid({ products, onProductClick, columns = 3 }) {
+function DynamicGrid({ products, onProductClick, columns = 8 }) {
   return (
-    <div className="product-grid" style={ { gridTemplateColumns: `repeat(${columns}, 1fr)` } }>
+    <div className="dynamic-grid" style={ { gridTemplateColumns: `repeat(${columns}, 1fr)` } }>
       {products.map((product) => (
         <ProductCard
           key={ product.id }
@@ -25,4 +25,4 @@ function ProductGrid({ products, onProductClick, columns = 3 }) {
   );
 }
 
-export default ProductGrid;
+export default DynamicGrid;

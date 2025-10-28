@@ -6,16 +6,17 @@
  * @param {function} onFilterChange - 필터 변경 핸들러 [Optional]
  * @param {function} onCartClick - 장바구니 버튼 클릭 핸들러 [Optional]
  * @param {string} currentFilter - 현재 선택된 필터 [Optional, 기본값: 'all']
+ * @param {boolean} isZoomedIn - 그리드 확대 상태 여부 [Optional, 기본값: false]
  *
  * Example usage:
- * <Header onFilterChange={handleFilter} currentFilter="male" />
+ * <Header onFilterChange={handleFilter} currentFilter="male" isZoomedIn={false} />
  */
-function Header({ onNavigate, onFilterChange, onCartClick, currentFilter = 'all' }) {
+function Header({ onNavigate, onFilterChange, onCartClick, currentFilter = 'all', isZoomedIn = false }) {
   return (
     <header className="header">
       <div className="header__nav">
         <button className="header__nav-btn" onClick={ onNavigate }>
-          +
+          { isZoomedIn ? '<' : '+' }
         </button>
       </div>
 
