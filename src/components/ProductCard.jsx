@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 /**
  * ProductCard 컴포넌트
@@ -13,13 +14,25 @@ import { useState } from 'react';
  */
 function ProductCard({ product, onClick, usePlaceholder = true }) {
   const [imageError, setImageError] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const handleImageError = () => {
     setImageError(true);
   };
 
   return (
-    <div className="product-card" onClick={ () => onClick && onClick(product) }>
+    <motion.div
+      layout
+      className="product-card"
+      onClick={ () => onClick && onClick(product) }
+      initial={ shouldReduceMotion ? false : { opacity: 0, scale: 0.8 } }
+      animate={ { opacity: 1, scale: 1 } }
+      exit={ shouldReduceMotion ? false : { opacity: 0, scale: 0.8 } }
+      transition={ {
+        layout: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.3 },
+      } }
+    >
       <div className="product-card__image">
         {imageError || usePlaceholder ? (
           <div className="product-card__placeholder">
@@ -47,7 +60,7 @@ function ProductCard({ product, onClick, usePlaceholder = true }) {
         <h3 className="product-card__name">{ product.name }</h3>
         <p className="product-card__price">${ product.price }</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

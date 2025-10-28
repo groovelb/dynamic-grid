@@ -1,3 +1,4 @@
+import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
 import ProductCard from './ProductCard';
 
 /**
@@ -13,15 +14,23 @@ import ProductCard from './ProductCard';
  */
 function DynamicGrid({ products, onProductClick, columns = 8 }) {
   return (
-    <div className="dynamic-grid" style={ { gridTemplateColumns: `repeat(${columns}, 1fr)` } }>
-      {products.map((product) => (
-        <ProductCard
-          key={ product.id }
-          product={ product }
-          onClick={ onProductClick }
-        />
-      ))}
-    </div>
+    <LayoutGroup>
+      <motion.div
+        className="dynamic-grid"
+        layout
+        style={ { gridTemplateColumns: `repeat(${columns}, 1fr)` } }
+      >
+        <AnimatePresence mode="popLayout">
+          {products.map((product) => (
+            <ProductCard
+              key={ product.id }
+              product={ product }
+              onClick={ onProductClick }
+            />
+          ))}
+        </AnimatePresence>
+      </motion.div>
+    </LayoutGroup>
   );
 }
 
