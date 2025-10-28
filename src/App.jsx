@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Header from './components/Header';
 import DynamicGrid from './components/DynamicGrid';
 import GridContainer from './components/GridContainer';
+import DebugCenterLines from './components/DebugCenterLines';
 import products from './data/products';
 
 function App() {
@@ -74,21 +75,23 @@ function App() {
   }, [filteredProducts, selectedProduct]);
 
   return (
-    <Box
-      sx={ {
-        width: '100%',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      } }
-    >
-      <Header
-        onNavigate={ handleNavigate }
-        onFilterChange={ handleFilterChange }
-        onCartClick={ handleCartClick }
-        currentFilter={ currentFilter }
-        isZoomedIn={ isItemZoomed || zoomLevel === 2 }
-      />
+    <>
+      <DebugCenterLines />
+      <Box
+        sx={ {
+          width: '100%',
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+        } }
+      >
+        <Header
+          onNavigate={ handleNavigate }
+          onFilterChange={ handleFilterChange }
+          onCartClick={ handleCartClick }
+          currentFilter={ currentFilter }
+          isZoomedIn={ isItemZoomed || zoomLevel === 2 }
+        />
       <Box
         component="main"
         sx={ {
@@ -111,6 +114,7 @@ function App() {
         </GridContainer>
       </Box>
     </Box>
+    </>
   );
 }
 
