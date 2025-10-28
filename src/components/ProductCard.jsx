@@ -49,13 +49,13 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
       transition={ TRANSITION.PRODUCT_CARD_LAYOUT }
       sx={ {
         cursor: 'pointer',
-        backgroundColor: '#ffffff',
         willChange: 'transform, opacity',
         aspectRatio: '1 / 1',
         overflow: 'hidden',
         width: '100%',
         height: 'auto',
         display: 'block',
+        position: 'relative',
         '&:hover': {
           opacity: 0.8,
           transition: 'opacity 0.2s ease',
@@ -70,7 +70,6 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#f5f5f5',
             '& svg': {
               opacity: 0.3,
             },
@@ -102,6 +101,58 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
           } }
         />
       )}
+
+      {/* 디버그: 카드 중앙선 */}
+      <Box
+        sx={ {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          zIndex: 10,
+        } }
+      >
+        {/* 세로 중앙선 */}
+        <Box
+          sx={ {
+            position: 'absolute',
+            left: '50%',
+            top: 0,
+            width: '1px',
+            height: '100%',
+            backgroundColor: 'blue',
+            opacity: 0.5,
+          } }
+        />
+        {/* 가로 중앙선 */}
+        <Box
+          sx={ {
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            width: '100%',
+            height: '1px',
+            backgroundColor: 'blue',
+            opacity: 0.5,
+          } }
+        />
+        {/* 중심점 */}
+        <Box
+          sx={ {
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: '8px',
+            height: '8px',
+            backgroundColor: 'blue',
+            borderRadius: '50%',
+            transform: 'translate(-50%, -50%)',
+            opacity: 0.7,
+          } }
+        />
+      </Box>
     </MotionBox>
   );
 }
