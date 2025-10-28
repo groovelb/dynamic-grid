@@ -6,8 +6,8 @@
 // === Duration (지속 시간) ===
 export const DURATION = {
   // Grid Container Transform
-  ZOOM_IN: 0.6,
-  ZOOM_OUT: 0.6,
+  ZOOM_IN: 0.2,
+  ZOOM_OUT: 0.2,
 
   // ProductCard Layout Animation
   LAYOUT: 0.4,

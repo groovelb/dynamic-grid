@@ -23,27 +23,16 @@ function GridContainer({ children, selectedProduct, onZoomChange }) {
   const containerRef = useRef(null);
   const shouldReduceMotion = useReducedMotion();
   const [transform, setTransform] = useState(getInitialTransform());
-  const [transformOrigin, setTransformOrigin] = useState('center center');
 
   // === 선택된 아이템 변경 시 transform 계산 ===
   useEffect(() => {
     if (selectedProduct?.element) {
-      // RAF 제거 - useEffect는 이미 Paint 후 실행되므로 불필요
       const calculated = calculateTransform(selectedProduct.element, containerRef);
-
-      setTransform({
-        x: calculated.x,
-        y: calculated.y,
-        scale: calculated.scale,
-      });
-      // transformOrigin 업데이트 (클릭된 아이템 위치)
-      setTransformOrigin(calculated.transformOrigin);
+      setTransform(calculated);
       onZoomChange?.(true);
     } else {
       // 줌아웃 - 초기 상태로 복귀
       setTransform(getInitialTransform());
-      // transformOrigin은 유지! (변경하지 않음)
-      // 이렇게 하면 줌아웃 시 origin이 바뀌지 않아 튐 현상 없음
       onZoomChange?.(false);
     }
   }, [selectedProduct, onZoomChange]);
@@ -58,12 +47,7 @@ function GridContainer({ children, selectedProduct, onZoomChange }) {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         const recalculated = calculateTransform(selectedProduct.element, containerRef);
-        setTransform({
-          x: recalculated.x,
-          y: recalculated.y,
-          scale: recalculated.scale,
-        });
-        setTransformOrigin(recalculated.transformOrigin);
+        setTransform(recalculated);
       }, DURATION.RESIZE_DEBOUNCE);
     };
 
@@ -78,9 +62,8 @@ function GridContainer({ children, selectedProduct, onZoomChange }) {
     <Motion.div
       ref={containerRef}
       style={{
-        // transformOrigin을 동적으로 설정 (클릭된 아이템 위치)
-        // 줌아웃 시에도 origin 유지하여 튐 방지
-        transformOrigin: transformOrigin,
+        // transformOrigin을 center로 고정 - translate 보정으로 정확한 위치 제어
+        transformOrigin: 'center center',
         width: '100%',
         willChange: selectedProduct ? 'transform' : 'auto', // GPU 가속 힌트
       }}
