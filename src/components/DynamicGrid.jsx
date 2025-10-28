@@ -1,4 +1,5 @@
 import { LayoutGroup, AnimatePresence } from 'framer-motion';
+import Box from '@mui/material/Box';
 import ProductCard from './ProductCard';
 
 /**
@@ -15,9 +16,13 @@ import ProductCard from './ProductCard';
 function DynamicGrid({ products, onProductClick, columns = 8 }) {
   return (
     <LayoutGroup>
-      <div
-        className="dynamic-grid"
-        style={ { gridTemplateColumns: `repeat(${columns}, 1fr)` } }
+      <Box
+        sx={ {
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          gap: '20px',
+          width: '100%',
+        } }
       >
         <AnimatePresence mode="popLayout">
           {products.map((product) => (
@@ -28,7 +33,7 @@ function DynamicGrid({ products, onProductClick, columns = 8 }) {
             />
           ))}
         </AnimatePresence>
-      </div>
+      </Box>
     </LayoutGroup>
   );
 }

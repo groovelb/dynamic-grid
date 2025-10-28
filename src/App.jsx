@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import Box from '@mui/material/Box';
 import Header from './components/Header';
 import DynamicGrid from './components/DynamicGrid';
 import products from './data/products';
-import './App.css';
 
 function App() {
   const [currentFilter, setCurrentFilter] = useState('all');
@@ -51,7 +51,14 @@ function App() {
     : products.filter((product) => product.category === currentFilter);
 
   return (
-    <div className="app">
+    <Box
+      sx={ {
+        width: '100%',
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      } }
+    >
       <Header
         onNavigate={ handleNavigate }
         onFilterChange={ handleFilterChange }
@@ -59,14 +66,21 @@ function App() {
         currentFilter={ currentFilter }
         isZoomedIn={ zoomLevel === 2 }
       />
-      <main className="main">
+      <Box
+        component="main"
+        sx={ {
+          flex: 1,
+          overflowY: 'auto',
+          padding: '40px',
+        } }
+      >
         <DynamicGrid
           products={ filteredProducts }
           onProductClick={ handleProductClick }
           columns={ getColumns() }
         />
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }
 

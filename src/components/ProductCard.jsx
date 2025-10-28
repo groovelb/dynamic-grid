@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import Box from '@mui/material/Box';
+
+const MotionBox = motion(Box);
 
 /**
  * ProductCard 컴포넌트
@@ -21,9 +24,8 @@ function ProductCard({ product, onClick, usePlaceholder = true }) {
   };
 
   return (
-    <motion.div
+    <MotionBox
       layout="position"
-      className="product-card"
       onClick={ () => onClick && onClick(product) }
       initial={ shouldReduceMotion ? false : { opacity: 0, scale: 0.9 } }
       animate={ { opacity: 1, scale: 1 } }
@@ -33,9 +35,35 @@ function ProductCard({ product, onClick, usePlaceholder = true }) {
         opacity: { duration: 0.3 },
         scale: { duration: 0.3 },
       } }
+      sx={ {
+        cursor: 'pointer',
+        backgroundColor: '#ffffff',
+        willChange: 'transform, opacity',
+        aspectRatio: '1 / 1',
+        overflow: 'hidden',
+        width: '100%',
+        height: 'auto',
+        display: 'block',
+        '&:hover': {
+          opacity: 0.8,
+          transition: 'opacity 0.2s ease',
+        },
+      } }
     >
       {imageError || usePlaceholder ? (
-        <div className="product-card__placeholder">
+        <Box
+          sx={ {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#f5f5f5',
+            '& svg': {
+              opacity: 0.3,
+            },
+          } }
+        >
           <svg
             width="60"
             height="60"
@@ -47,15 +75,22 @@ function ProductCard({ product, onClick, usePlaceholder = true }) {
             <circle cx="20" cy="25" r="5" fill="#000000" />
             <polyline points="5,45 20,30 35,40 55,25" stroke="#000000" strokeWidth="2" fill="none" />
           </svg>
-        </div>
+        </Box>
       ) : (
-        <img
+        <Box
+          component="img"
           src={ product.images[0] }
           alt={ product.name }
           onError={ handleImageError }
+          sx={ {
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block',
+          } }
         />
       )}
-    </motion.div>
+    </MotionBox>
   );
 }
 

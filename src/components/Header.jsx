@@ -1,3 +1,6 @@
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+
 /**
  * Header 컴포넌트
  *
@@ -13,40 +16,100 @@
  */
 function Header({ onNavigate, onFilterChange, onCartClick, currentFilter = 'all', isZoomedIn = false }) {
   return (
-    <header className="header">
-      <div className="header__nav">
-        <button className="header__nav-btn" onClick={ onNavigate }>
+    <Box
+      component="header"
+      sx={ {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '20px 40px',
+        backgroundColor: '#ffffff',
+      } }
+    >
+      <Box>
+        <Button
+          onClick={ onNavigate }
+          sx={ {
+            padding: '10px 20px',
+            fontSize: '16px',
+            minWidth: '60px',
+            color: '#000000',
+            '&:hover': {
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            },
+          } }
+        >
           { isZoomedIn ? '<' : '+' }
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="header__filter">
-        <button
-          className={ currentFilter === 'all' ? 'filter-btn filter-btn--active' : 'filter-btn' }
+      <Box sx={ { display: 'flex', gap: '20px' } }>
+        <Button
           onClick={ () => onFilterChange && onFilterChange('all') }
+          sx={ {
+            padding: '10px 20px',
+            fontSize: '14px',
+            backgroundColor: currentFilter === 'all' ? '#000000' : '#ffffff',
+            color: currentFilter === 'all' ? '#ffffff' : '#000000',
+            '&:hover': {
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            },
+          } }
         >
           All
-        </button>
-        <button
-          className={ currentFilter === 'male' ? 'filter-btn filter-btn--active' : 'filter-btn' }
+        </Button>
+        <Button
           onClick={ () => onFilterChange && onFilterChange('male') }
+          sx={ {
+            padding: '10px 20px',
+            fontSize: '14px',
+            backgroundColor: currentFilter === 'male' ? '#000000' : '#ffffff',
+            color: currentFilter === 'male' ? '#ffffff' : '#000000',
+            '&:hover': {
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            },
+          } }
         >
           Male
-        </button>
-        <button
-          className={ currentFilter === 'female' ? 'filter-btn filter-btn--active' : 'filter-btn' }
+        </Button>
+        <Button
           onClick={ () => onFilterChange && onFilterChange('female') }
+          sx={ {
+            padding: '10px 20px',
+            fontSize: '14px',
+            backgroundColor: currentFilter === 'female' ? '#000000' : '#ffffff',
+            color: currentFilter === 'female' ? '#ffffff' : '#000000',
+            '&:hover': {
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            },
+          } }
         >
           Female
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="header__cart">
-        <button className="header__cart-btn" onClick={ onCartClick }>
+      <Box>
+        <Button
+          onClick={ onCartClick }
+          sx={ {
+            padding: '10px 20px',
+            fontSize: '16px',
+            minWidth: '60px',
+            color: '#000000',
+            '&:hover': {
+              backgroundColor: '#000000',
+              color: '#ffffff',
+            },
+          } }
+        >
           Cart
-        </button>
-      </div>
-    </header>
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
