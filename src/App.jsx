@@ -1,35 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import Header from './components/Header';
+import ProductGrid from './components/ProductGrid';
+import products from './data/products';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentFilter, setCurrentFilter] = useState('all');
+  const [columns, setColumns] = useState(3);
+
+  const handleFilterChange = (filter) => {
+    setCurrentFilter(filter);
+  };
+
+  const handleNavigate = () => {
+    /** TODO: 네비게이션 기능 구현 (그리드 컬럼 수 조절 / 백버튼) */
+    console.log('Navigation clicked');
+  };
+
+  const handleCartClick = () => {
+    /** TODO: 장바구니 기능 구현 */
+    console.log('Cart clicked');
+  };
+
+  const handleProductClick = (product) => {
+    /** TODO: 제품 확대 화면 기능 구현 */
+    console.log('Product clicked:', product);
+  };
+
+  const filteredProducts = currentFilter === 'all'
+    ? products
+    : products.filter((product) => product.category === currentFilter);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="app">
+      <Header
+        onNavigate={ handleNavigate }
+        onFilterChange={ handleFilterChange }
+        onCartClick={ handleCartClick }
+        currentFilter={ currentFilter }
+      />
+      <main className="main">
+        <ProductGrid
+          products={ filteredProducts }
+          onProductClick={ handleProductClick }
+          columns={ columns }
+        />
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

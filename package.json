@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "rules:init": "ruler init",
+    "rules:apply": "ruler apply",
+    "rules:apply:cursor": "ruler apply --agents=cursor"
   },
   "dependencies": {
     "react": "^19.1.1",
@@ -15,6 +18,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@intellectronica/ruler": "^0.3.11",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",

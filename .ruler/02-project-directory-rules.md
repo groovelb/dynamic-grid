@@ -1,0 +1,15 @@
+새로운 컴퍼넌트를 추가할때는 아래 디렉토리 룰을 따른다
+
+src/
+  components/    # 재사용 가능한 UI 컴포넌트 모음
+
+
+  pages/
+  templates/     # 다수의 컴퍼넌트들이 합쳐진 템플릿 컴퍼넌트
+  sections/      # 페이지 내 주요 섹션에 해당하는 컴포넌트
+  hooks/         # 커스텀 React 훅(hook) 모음
+  utils/         # 유틸리티 함수 모음
+  styles/        # 전역 스타일 또는 테마 관련 파일
+  assets/        # 이미지, 폰트 등 정적 자원
+
+
