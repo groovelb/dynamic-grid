@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+다음과 같은 rule을 적용해서 mui custom theme과 theme provider를 전역적으로 사용합니다.
+- custime theme은 별도의 파일로 관리합니다.
+- typography
+  - 본문은 pretendard variable 버전을 웹폰트로 사용합니다.
+  - headline의 영어는, google font의 Outfit, 한글은 pretendard의 가장 높은 weight를 사용합니다.
+
+- color
+  - primary color는 '#0000FF'를 사용합니다.
+  - Secondary color는 blueGrey의 가장 어두운색
+
+- elevation
+  - paper에 기본적으로 사용되는 elevation의 box shadow에는 x,y, offset을 0
+  - opacity값을 낮추고 blur값을 높임. dimmed shadow
+
+- borderRadius
+  - 인라인르로 직접 지정하지 않는이상 모든 컴퍼넌트의 borderRadius는 0
+
