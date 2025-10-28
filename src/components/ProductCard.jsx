@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import Box from '@mui/material/Box';
+import { ANIMATION_STATES, TRANSITION } from '../constants/animations';
 
 const MotionBox = motion(Box);
 
@@ -10,12 +11,14 @@ const MotionBox = motion(Box);
  * Props:
  * @param {object} product - 제품 데이터 객체 [Required]
  * @param {function} onClick - 카드 클릭 핸들러 [Optional]
- * @param {boolean} usePlaceholder - placeholder 모드 사용 여부 [Optional, 기본값: true]
+ * @param {boolean} usePlaceholder - placeholder 모드 사용 여부 [Optional, 기본값: false]
+ * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional, 기본값: false]
+ * @param {boolean} isSelected - 선택된 아이템 여부 [Optional, 기본값: false]
  *
  * Example usage:
  * <ProductCard product={productData} onClick={handleProductClick} />
  */
-function ProductCard({ product, onClick, usePlaceholder = false }) {
+function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = false, isSelected = false }) {
   const [imageError, setImageError] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
@@ -23,18 +26,27 @@ function ProductCard({ product, onClick, usePlaceholder = false }) {
     setImageError(true);
   };
 
+  const handleClick = (e) => {
+    if (onClick) {
+      // DOM element reference와 함께 전달 (transform 계산용)
+      onClick({
+        ...product,
+        element: e.currentTarget
+      });
+    }
+  };
+
+  // === Fade out 효과: 줌 상태에서 선택되지 않은 아이템 숨김 ===
+  const targetOpacity = isItemZoomed && !isSelected ? 0 : 1;
+
   return (
     <MotionBox
       layout="position"
-      onClick={ () => onClick && onClick(product) }
-      initial={ shouldReduceMotion ? false : { opacity: 0, scale: 0.9 } }
-      animate={ { opacity: 1, scale: 1 } }
-      exit={ shouldReduceMotion ? false : { opacity: 0, scale: 0.9 } }
-      transition={ {
-        layout: { duration: 0.4, ease: 'easeInOut' },
-        opacity: { duration: 0.3 },
-        scale: { duration: 0.3 },
-      } }
+      onClick={ handleClick }
+      initial={ shouldReduceMotion ? false : ANIMATION_STATES.INITIAL }
+      animate={ { opacity: targetOpacity, scale: ANIMATION_STATES.ANIMATE.scale } }
+      exit={ shouldReduceMotion ? false : ANIMATION_STATES.EXIT }
+      transition={ TRANSITION.PRODUCT_CARD_LAYOUT }
       sx={ {
         cursor: 'pointer',
         backgroundColor: '#ffffff',
