@@ -26,13 +26,10 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
     setImageError(true);
   };
 
-  const handleClick = (e) => {
+  const handleClick = () => {
     if (onClick) {
-      // DOM element reference와 함께 전달 (transform 계산용)
-      onClick({
-        ...product,
-        element: e.currentTarget
-      });
+      // ID만 전달 (DOM 참조 제거)
+      onClick(product.id);
     }
   };
 

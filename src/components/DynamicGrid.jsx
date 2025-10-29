@@ -9,20 +9,20 @@ import ProductCard from './ProductCard';
  * @param {array} products - 제품 데이터 배열 [Required]
  * @param {function} onProductClick - 제품 클릭 핸들러 [Optional]
  * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 8]
- * @param {object|null} selectedProduct - 선택된 제품 [Optional]
+ * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
  * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional]
  *
  * Example usage:
  * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} />
  */
-function DynamicGrid({ products, onProductClick, columns = 8, selectedProduct = null, isItemZoomed = false }) {
+function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId = null, isItemZoomed = false }) {
   return (
     <LayoutGroup>
       <Box
         sx={ {
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: '20px',
+          gap: '0px',
           width: '100%',
         } }
       >
@@ -33,7 +33,7 @@ function DynamicGrid({ products, onProductClick, columns = 8, selectedProduct = 
               product={ product }
               onClick={ onProductClick }
               isItemZoomed={ isItemZoomed }
-              isSelected={ selectedProduct?.id === product.id }
+              isSelected={ selectedProductId === product.id }
             />
           ))}
         </AnimatePresence>

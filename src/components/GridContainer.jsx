@@ -1,54 +1,86 @@
 import { useRef, useEffect, useState } from 'react';
-import { motion as Motion, useReducedMotion } from 'framer-motion';
 import { calculateTransform, getInitialTransform } from '../utils/transformCalculator';
-import { TRANSITION, DURATION, REDUCED_MOTION } from '../constants/animations';
+import DebugPanel from './DebugPanel';
 
 /**
- * GridContainer 컴포넌트
+ * GridContainer 컴포넌트 (완전 재설계)
  *
- * DynamicGrid를 감싸는 Transform Wrapper
- * 선택된 아이템을 화면 중앙으로 확대/축소하는 역할
+ * 변경사항:
+ * - Framer Motion 제거 → 순수 CSS transition
+ * - DOM 측정 최소화 → 수학적 계산
+ * - 동적 transformOrigin
+ * - wrapper 기준 좌표
  *
  * Props:
  * @param {ReactNode} children - DynamicGrid 컴포넌트 [Required]
- * @param {Object|null} selectedProduct - 선택된 제품 (element 포함) [Optional]
+ * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
+ * @param {number} columns - 그리드 컬럼 수 [Required]
+ * @param {RefObject} wrapperRef - Wrapper(main) ref [Required]
  * @param {function} onZoomChange - 줌 상태 변경 콜백 [Optional]
  *
  * Example usage:
- * <GridContainer selectedProduct={selected} onZoomChange={handleZoomChange}>
+ * <GridContainer
+ *   selectedProductId="1"
+ *   columns={8}
+ *   wrapperRef={wrapperRef}
+ *   onZoomChange={handleZoomChange}
+ * >
  *   <DynamicGrid ... />
  * </GridContainer>
  */
-function GridContainer({ children, selectedProduct, onZoomChange }) {
+function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoomChange }) {
   const containerRef = useRef(null);
-  const shouldReduceMotion = useReducedMotion();
   const [transform, setTransform] = useState(getInitialTransform());
+  const prevTransformRef = useRef(getInitialTransform()); // 이전 transform 저장
 
   // === 선택된 아이템 변경 시 transform 계산 ===
   useEffect(() => {
-    if (selectedProduct?.element) {
-      const calculated = calculateTransform(selectedProduct.element, containerRef);
+    if (selectedProductId) {
+      const calculated = calculateTransform(
+        selectedProductId,
+        columns,
+        containerRef,
+        wrapperRef
+      );
       setTransform(calculated);
+      prevTransformRef.current = calculated; // 저장
       onZoomChange?.(true);
     } else {
-      // 줌아웃 - 초기 상태로 복귀
-      setTransform(getInitialTransform());
+      // 줌아웃 - 이전 origin 유지하면서 위치만 초기화
+      setTransform({
+        x: 0,
+        y: 0,
+        scale: 1,
+        transformOrigin: prevTransformRef.current.transformOrigin, // 이전 origin 유지!
+      });
       onZoomChange?.(false);
+
+      // 애니메이션 완료 후 origin을 center로 변경
+      setTimeout(() => {
+        if (!selectedProductId) { // 여전히 줌아웃 상태라면
+          setTransform(getInitialTransform());
+        }
+      }, 200); // transition duration과 동일
     }
-  }, [selectedProduct, onZoomChange]);
+  }, [selectedProductId, columns, wrapperRef, onZoomChange]);
 
   // === Window resize 시 transform 재계산 ===
   useEffect(() => {
-    if (!selectedProduct?.element) return;
+    if (!selectedProductId) return;
 
     let timeoutId;
     const handleResize = () => {
-      // Debounce: 상수로 정의된 시간 후에 재계산
+      // Debounce: 100ms 후에 재계산
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        const recalculated = calculateTransform(selectedProduct.element, containerRef);
+        const recalculated = calculateTransform(
+          selectedProductId,
+          columns,
+          containerRef,
+          wrapperRef
+        );
         setTransform(recalculated);
-      }, DURATION.RESIZE_DEBOUNCE);
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize);
@@ -56,26 +88,27 @@ function GridContainer({ children, selectedProduct, onZoomChange }) {
       window.removeEventListener('resize', handleResize);
       clearTimeout(timeoutId);
     };
-  }, [selectedProduct]);
+  }, [selectedProductId, columns, wrapperRef]);
 
   return (
-    <Motion.div
-      ref={containerRef}
-      style={{
-        // transformOrigin을 center로 고정 - translate 보정으로 정확한 위치 제어
-        transformOrigin: 'center center',
-        width: '100%',
-        willChange: selectedProduct ? 'transform' : 'auto', // GPU 가속 힌트
-      }}
-      animate={{
-        x: transform.x,
-        y: transform.y,
-        scale: transform.scale,
-      }}
-      transition={shouldReduceMotion ? REDUCED_MOTION : TRANSITION.GRID_ZOOM}
-    >
-      {children}
-    </Motion.div>
+    <>
+      <DebugPanel transform={transform} columns={columns} containerRef={containerRef} />
+      <div
+        ref={containerRef}
+        style={{
+          width: '100%',
+          // CSS transform 직접 제어
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+          transformOrigin: transform.transformOrigin,
+          // 순수 CSS transition
+          transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          // GPU 가속 힌트
+          willChange: selectedProductId ? 'transform' : 'auto',
+        }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 

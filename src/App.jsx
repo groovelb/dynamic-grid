@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Header from './components/Header';
 import DynamicGrid from './components/DynamicGrid';
@@ -10,9 +10,12 @@ function App() {
   const [currentFilter, setCurrentFilter] = useState('all');
   const [zoomLevel, setZoomLevel] = useState(0);
 
-  // === Item Zoom 상태 (신규) ===
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  // === Item Zoom 상태 ===
+  const [selectedProductId, setSelectedProductId] = useState(null);
   const [isItemZoomed, setIsItemZoomed] = useState(false);
+
+  // === Wrapper ref (transform 계산용) ===
+  const wrapperRef = useRef(null);
 
   /** 확대 레벨에 따른 컬럼 수 계산 */
   const getColumns = () => {
@@ -35,7 +38,7 @@ function App() {
   const handleNavigate = () => {
     // 우선순위 1: Item Zoom 해제
     if (isItemZoomed) {
-      setSelectedProduct(null);
+      setSelectedProductId(null);
       return;
     }
 
@@ -54,9 +57,9 @@ function App() {
     console.log('Cart clicked');
   };
 
-  const handleProductClick = (productWithElement) => {
-    // ProductCard에서 전달된 { ...product, element } 객체
-    setSelectedProduct(productWithElement);
+  const handleProductClick = (productId) => {
+    // ProductCard에서 전달된 id
+    setSelectedProductId(productId);
   };
 
   const handleZoomChange = (isZoomed) => {
@@ -69,14 +72,14 @@ function App() {
 
   // === 필터 변경 시 선택된 아이템이 사라지면 자동 줌아웃 ===
   useEffect(() => {
-    if (selectedProduct && !filteredProducts.find(p => p.id === selectedProduct.id)) {
-      setSelectedProduct(null);
+    if (selectedProductId && !filteredProducts.find(p => p.id === selectedProductId)) {
+      setSelectedProductId(null);
     }
-  }, [filteredProducts, selectedProduct]);
+  }, [filteredProducts, selectedProductId]);
 
   return (
     <>
-      <DebugCenterLines />
+      <DebugCenterLines wrapperRef={wrapperRef} />
       <Box
         sx={ {
           width: '100%',
@@ -93,22 +96,25 @@ function App() {
           isZoomedIn={ isItemZoomed || zoomLevel === 2 }
         />
       <Box
+        ref={ wrapperRef }
         component="main"
         sx={ {
           flex: 1,
           overflowY: 'auto',
-          padding: '40px',
+          // padding: '40px',
         } }
       >
         <GridContainer
-          selectedProduct={ selectedProduct }
+          selectedProductId={ selectedProductId }
+          columns={ getColumns() }
+          wrapperRef={ wrapperRef }
           onZoomChange={ handleZoomChange }
         >
           <DynamicGrid
             products={ filteredProducts }
             onProductClick={ handleProductClick }
             columns={ getColumns() }
-            selectedProduct={ selectedProduct }
+            selectedProductId={ selectedProductId }
             isItemZoomed={ isItemZoomed }
           />
         </GridContainer>

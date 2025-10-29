@@ -1,83 +1,121 @@
 /**
- * 클릭된 그리드 아이템을 화면 중앙으로 이동시키기 위한 transform 값 계산
- * transformOrigin은 'center center'로 고정하고, scale로 인한 위치 변화를 translate로 보정
+ * Transform 계산 유틸리티 (완전 재설계)
  *
- * @param {HTMLElement} clickedElement - 클릭된 ProductCard의 DOM 요소
- * @param {Object} containerRef - GridContainer의 ref
- * @returns {Object} { x, y, scale }
+ * 문제 해결:
+ * 1. DOM 측정 최소화 (container, wrapper만)
+ * 2. 수학적 계산으로 아이템 위치 도출
+ * 3. 동적 transformOrigin으로 복잡한 offset 보정 제거
+ * 4. wrapper 기준 좌표로 Header 계산 불필요
+ * 5. 순수 함수로 테스트 가능
  */
-export function calculateTransform(clickedElement, containerRef) {
-  // === Phase 1: 좌표 수집 ===
-  const itemRect = clickedElement.getBoundingClientRect();
-  const containerRect = containerRef?.current?.getBoundingClientRect();
-  const headerElement = document.querySelector('header');
-  const headerRect = headerElement?.getBoundingClientRect();
 
-  if (!containerRect) {
-    // containerRef가 없으면 기본값 반환
-    return { x: 0, y: 0, scale: 1 };
+import { calculateGridLayout, calculateItemPosition } from './gridLayout';
+
+/**
+ * Transform 계산 (수학적 계산 기반)
+ *
+ * @param {string|number} itemId - 선택된 아이템 ID (1부터 시작)
+ * @param {number} columns - 그리드 컬럼 수
+ * @param {RefObject} containerRef - GridContainer의 ref
+ * @param {RefObject} wrapperRef - Wrapper(main)의 ref
+ * @returns {Object} { x, y, scale, transformOrigin }
+ */
+export function calculateTransform(itemId, columns, containerRef, wrapperRef) {
+  // === 0. 유효성 검사 ===
+  if (!itemId || !containerRef?.current || !wrapperRef?.current) {
+    return getInitialTransform();
   }
 
-  // === Phase 2: 현재 아이템의 중심점 (뷰포트 좌표계) ===
-  const itemCenterX = itemRect.left + itemRect.width / 2;
-  const itemCenterY = itemRect.top + itemRect.height / 2;
+  // === 1. DOM 측정 (최소한만) ===
+  const containerRect = containerRef.current.getBoundingClientRect();
+  const wrapperRect = wrapperRef.current.getBoundingClientRect();
 
-  // === Phase 3: Container의 중심점 ===
-  const containerCenterX = containerRect.left + containerRect.width / 2;
-  const containerCenterY = containerRect.top + containerRect.height / 2;
+  // === 2. 그리드 레이아웃 계산 (순수 함수) ===
+  const layout = calculateGridLayout(columns, containerRect.width, 0);
 
-  // === Phase 4: 목표 위치 (Header 제외한 뷰포트 중앙) ===
-  const headerHeight = headerRect?.height || 0;
-  const availableHeight = window.innerHeight - headerHeight;
+  // === 3. 아이템 위치 계산 (순수 함수) ===
+  const itemPos = calculateItemPosition(itemId, layout);
 
-  const targetX = window.innerWidth / 2;
-  const targetY = availableHeight / 2 + headerHeight;
+  // === 4. 아이템 중심 (viewport 좌표) ===
+  const itemCenterX = containerRect.left + itemPos.centerX;
+  const itemCenterY = containerRect.top + itemPos.centerY;
 
-  // === Phase 5: 기본 이동 거리 (scale 없이) ===
-  const baseTranslateX = targetX - itemCenterX;
-  const baseTranslateY = targetY - itemCenterY;
+  // === 5. 목표 중심 (wrapper content area 중앙) ===
+  // wrapper에 padding: 40px이 있으므로 content area 기준으로 계산
+  const WRAPPER_PADDING = 40; // App.jsx의 wrapper padding
+  const contentWidth = wrapperRect.width - WRAPPER_PADDING * 2;
+  const contentHeight = wrapperRect.height - WRAPPER_PADDING * 2;
+  const targetCenterX = wrapperRect.left + WRAPPER_PADDING + contentWidth / 2;
+  const targetCenterY = wrapperRect.top + WRAPPER_PADDING + contentHeight / 2;
 
-  // === Phase 6: 확대 비율 계산 (뷰포트의 70% 차지) ===
-  const targetWidth = window.innerWidth * 0.7;
-  const targetHeight = availableHeight * 0.7;
+  // === 6. Scale 계산 (content area 기준) ===
+  const targetWidth = contentWidth * 0.7;
+  const targetHeight = contentHeight * 0.7;
+  const scaleByWidth = targetWidth / itemPos.width;
+  const scaleByHeight = targetHeight / itemPos.height;
+  const scaleRaw = Math.min(scaleByWidth, scaleByHeight);
 
-  const scaleByWidth = targetWidth / itemRect.width;
-  const scaleByHeight = targetHeight / itemRect.height;
-  const scale = Math.min(scaleByWidth, scaleByHeight); // aspect ratio 유지
+  // Scale을 정수로 고정 (서브픽셀 렌더링 오차 제거)
+  const scale = Math.floor(scaleRaw);
 
-  // === Phase 7: Scale Offset 보정 ===
-  // transformOrigin이 'center center'일 때,
-  // scale 적용 시 아이템이 Container 중심 기준으로 확대됨
-  // 아이템의 실제 위치 변화를 계산하여 translate로 보정
+  // === 7. 동적 transformOrigin (container 기준) ===
+  // 아이템의 중심을 origin으로 설정
+  const originX = itemPos.centerX;
+  const originY = itemPos.centerY;
 
-  // Container 중심에서 아이템까지의 거리
-  const itemOffsetX = itemCenterX - containerCenterX;
-  const itemOffsetY = itemCenterY - containerCenterY;
+  // === 8. 단순 translate (viewport 기준) ===
+  // transformOrigin이 아이템 중심이므로, 목표까지의 직선 거리만 계산
+  const translateX = targetCenterX - itemCenterX;
+  const translateY = targetCenterY - itemCenterY;
 
-  // scale 적용 시 아이템이 이동하는 거리
-  // (scale - 1)을 곱하면 확대로 인한 추가 이동 거리
-  const scaleOffsetX = itemOffsetX * (scale - 1);
-  const scaleOffsetY = itemOffsetY * (scale - 1);
+  // === 디버그 로그 ===
+  console.group('🎯 Transform Calculation (Pure Math)');
+  console.log('📐 Grid Layout:', layout);
+  console.log('📍 Item Position (container relative):', {
+    left: itemPos.left.toFixed(2),
+    top: itemPos.top.toFixed(2),
+    centerX: itemPos.centerX.toFixed(2),
+    centerY: itemPos.centerY.toFixed(2),
+    column: itemPos.column,
+    row: itemPos.row,
+  });
+  console.log('🎯 Item Center (viewport):', itemCenterX.toFixed(2), itemCenterY.toFixed(2));
+  console.log('🎯 Target Center (wrapper):', targetCenterX.toFixed(2), targetCenterY.toFixed(2));
+  console.log('📏 Scale:', scale.toFixed(3));
+  console.log('🔄 Transform Origin:', `${originX.toFixed(2)}px ${originY.toFixed(2)}px`);
+  console.log('➡️  Translate:', translateX.toFixed(2), translateY.toFixed(2));
 
-  // === Phase 8: 최종 translate 계산 (offset 보정 포함) ===
-  // 기본 이동 거리에서 scale offset을 빼서 정확한 위치로 이동
-  const translateX = baseTranslateX - scaleOffsetX;
-  const translateY = baseTranslateY - scaleOffsetY;
+  // === 검증 ===
+  const finalX = itemCenterX + translateX;
+  const finalY = itemCenterY + translateY;
+  const errorX = Math.abs(finalX - targetCenterX);
+  const errorY = Math.abs(finalY - targetCenterY);
+  console.log('✅ Final Center:', finalX.toFixed(2), finalY.toFixed(2));
+  console.log('✅ Error:', errorX.toFixed(3), errorY.toFixed(3), 'px');
+
+  if (errorX > 1 || errorY > 1) {
+    console.warn('⚠️  Error exceeds 1px threshold!');
+  }
+  console.groupEnd();
 
   return {
     x: translateX,
     y: translateY,
-    scale: scale,
+    scale,
+    transformOrigin: `${originX}px ${originY}px`,
   };
 }
 
 /**
  * 줌아웃 시 사용하는 초기 transform 값
+ *
+ * @returns {Object} { x: 0, y: 0, scale: 1, transformOrigin: '50% 50%' }
  */
 export function getInitialTransform() {
   return {
     x: 0,
     y: 0,
     scale: 1,
+    transformOrigin: '50% 50%',
   };
 }

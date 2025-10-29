@@ -3,23 +3,30 @@ import { useEffect, useState } from 'react';
 /**
  * DebugCenterLines 컴포넌트
  *
- * 디버깅용 화면 중앙선 표시
+ * 디버깅용 wrapper content area 중앙선 표시
  * 줌인 모드에서 아이템이 정확히 중앙에 정렬되는지 확인
+ *
+ * Props:
+ * @param {RefObject} wrapperRef - Wrapper(main) ref
  */
-function DebugCenterLines() {
-  const [centerY, setCenterY] = useState(0);
+function DebugCenterLines({ wrapperRef }) {
+  const [center, setCenter] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const calculateCenter = () => {
-      // transformCalculator와 동일한 방식으로 계산
-      const headerElement = document.querySelector('header');
-      const headerRect = headerElement?.getBoundingClientRect();
-      const headerHeight = headerRect?.height || 0;
+      if (!wrapperRef?.current) return;
 
-      const availableHeight = window.innerHeight - headerHeight;
-      const targetY = availableHeight / 2 + headerHeight;
+      const wrapperRect = wrapperRef.current.getBoundingClientRect();
 
-      setCenterY(targetY);
+      // wrapper padding 고려 (transformCalculator와 동일)
+      const WRAPPER_PADDING = 40;
+      const contentWidth = wrapperRect.width - WRAPPER_PADDING * 2;
+      const contentHeight = wrapperRect.height - WRAPPER_PADDING * 2;
+
+      const targetCenterX = wrapperRect.left + WRAPPER_PADDING + contentWidth / 2;
+      const targetCenterY = wrapperRect.top + WRAPPER_PADDING + contentHeight / 2;
+
+      setCenter({ x: targetCenterX, y: targetCenterY });
     };
 
     // 초기 계산
@@ -28,14 +35,14 @@ function DebugCenterLines() {
     // Resize 시 재계산
     window.addEventListener('resize', calculateCenter);
 
-    // Header 로드 대기 (DOM 완성 후)
+    // Wrapper 로드 대기
     const timer = setTimeout(calculateCenter, 100);
 
     return () => {
       window.removeEventListener('resize', calculateCenter);
       clearTimeout(timer);
     };
-  }, []);
+  }, [wrapperRef]);
 
   return (
     <div
@@ -49,25 +56,24 @@ function DebugCenterLines() {
         zIndex: 9999,
       }}
     >
-      {/* 세로 중앙선 */}
+      {/* 세로 중앙선 (wrapper content area) */}
       <div
         style={{
           position: 'absolute',
-          left: '50%',
+          left: `${center.x}px`,
           top: 0,
           width: '2px',
           height: '100%',
           backgroundColor: 'red',
-          transform: 'translateX(-50%)',
         }}
       />
 
-      {/* 가로 중앙선 (Header 제외, 동적 계산) */}
+      {/* 가로 중앙선 (wrapper content area) */}
       <div
         style={{
           position: 'absolute',
           left: 0,
-          top: `${centerY}px`,
+          top: `${center.y}px`,
           width: '100%',
           height: '2px',
           backgroundColor: 'red',
@@ -78,8 +84,8 @@ function DebugCenterLines() {
       <div
         style={{
           position: 'absolute',
-          left: '50%',
-          top: `${centerY}px`,
+          left: `${center.x}px`,
+          top: `${center.y}px`,
           width: '20px',
           height: '20px',
           border: '3px solid red',
@@ -93,8 +99,8 @@ function DebugCenterLines() {
       <div
         style={{
           position: 'absolute',
-          left: '50%',
-          top: `${centerY + 30}px`,
+          left: `${center.x}px`,
+          top: `${center.y + 30}px`,
           transform: 'translateX(-50%)',
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           color: 'white',
@@ -104,37 +110,8 @@ function DebugCenterLines() {
           fontFamily: 'monospace',
         }}
       >
-        CENTER Y: {centerY.toFixed(1)}px
+        TARGET: ({center.x.toFixed(1)}, {center.y.toFixed(1)})
       </div>
-
-      {/* 그리드 라인들 (선택적) */}
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div
-          key={`v-${i}`}
-          style={{
-            position: 'absolute',
-            left: `${(i + 1) * 10}%`,
-            top: 0,
-            width: '1px',
-            height: '100%',
-            backgroundColor: 'rgba(255, 0, 0, 0.1)',
-          }}
-        />
-      ))}
-
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div
-          key={`h-${i}`}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: `${(i + 1) * 10}%`,
-            width: '100%',
-            height: '1px',
-            backgroundColor: 'rgba(255, 0, 0, 0.1)',
-          }}
-        />
-      ))}
     </div>
   );
 }
