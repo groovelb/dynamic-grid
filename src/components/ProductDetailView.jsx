@@ -43,12 +43,9 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
   // 마지막 네비게이션 타입 ('horizontal' | 'vertical')
   const [lastNavigationType, setLastNavigationType] = useState('horizontal');
 
-  // 전환 중 플래그 (빠른 스크롤 방지)
+  // 전환 중 플래그 (빠른 스크롤 방지) - ref로 즉시 동기 차단
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // 스크롤 누적 관리 (fullpage.js 스타일)
-  const lastScrollTime = useRef(Date.now());
-  const accumulatedDelta = useRef(0);
+  const isTransitioningRef = useRef(false); // 동기 차단용
 
   // === 현재 제품 및 이미지 인덱스 계산 ===
   const currentProduct = filteredProducts[productIndex];
@@ -121,13 +118,17 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     setVerticalDirection(1);
     setLastNavigationType('vertical');
     setIsTransitioning(true);
+    isTransitioningRef.current = true; // 동기 업데이트
     setProductIndex(prev => {
       console.log(`   productIndex: ${prev} → ${prev + 1}`);
       return prev + 1;
     });
 
     // 전환 완료 후 플래그 해제 (애니메이션 duration과 동기화)
-    setTimeout(() => setIsTransitioning(false), 300);
+    setTimeout(() => {
+      setIsTransitioning(false);
+      isTransitioningRef.current = false;
+    }, 300);
   }, [isTransitioning, productIndex, filteredProducts.length]);
 
   const handlePrevProduct = useCallback(() => {
@@ -147,13 +148,17 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     setVerticalDirection(-1);
     setLastNavigationType('vertical');
     setIsTransitioning(true);
+    isTransitioningRef.current = true; // 동기 업데이트
     setProductIndex(prev => {
       console.log(`   productIndex: ${prev} → ${prev - 1}`);
       return prev - 1;
     });
 
     // 전환 완료 후 플래그 해제
-    setTimeout(() => setIsTransitioning(false), 300);
+    setTimeout(() => {
+      setIsTransitioning(false);
+      isTransitioningRef.current = false;
+    }, 300);
   }, [isTransitioning, productIndex]);
 
   // 키보드 이벤트 핸들러 (ESC, 세로 방향키)
@@ -175,57 +180,47 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, handleNextProduct, handlePrevProduct]);
 
-  // 휠 이벤트 핸들러 (fullpage.js 스타일 스크롤 누적)
+  // 휠 이벤트 핸들러 (최소 거리 감지 후 즉시 트리거 + duration 동안 무시)
   useEffect(() => {
-    const handleWheel = (e) => {
-      console.log('🔵 Wheel event triggered:', {
-        deltaY: e.deltaY,
-        accumulatedDelta: accumulatedDelta.current,
-        isTransitioning,
-        productIndex,
-        totalProducts: filteredProducts.length
-      });
+    const MIN_DISTANCE = 10; // 방향 감지를 위한 최소 거리 (매우 낮음)
 
+    const handleWheel = (e) => {
       e.preventDefault();
 
-      const now = Date.now();
-      const timeDiff = now - lastScrollTime.current;
-
-      // 150ms 윈도우 내의 스크롤은 누적
-      if (timeDiff < 150) {
-        accumulatedDelta.current += e.deltaY;
-      } else {
-        // 새로운 스크롤 시작
-        accumulatedDelta.current = e.deltaY;
-      }
-
-      lastScrollTime.current = now;
-
-      console.log('🟡 After accumulation:', {
-        accumulatedDelta: accumulatedDelta.current,
-        threshold: 50,
-        willTrigger: Math.abs(accumulatedDelta.current) >= 50
+      console.log('🔵 Wheel event:', {
+        deltaY: e.deltaY,
+        isTransitioningRef: isTransitioningRef.current,
       });
 
-      // 임계값(50px) 도달 시 제품 전환
-      if (Math.abs(accumulatedDelta.current) >= 50) {
-        const direction = accumulatedDelta.current > 0 ? 'down (next)' : 'up (prev)';
-        console.log('🟢 Threshold reached! Direction:', direction);
+      // REF를 체크 (동기적 차단!)
+      if (isTransitioningRef.current) {
+        console.log('⛔ Ignored: cooldown active (REF blocked synchronously)');
+        return;
+      }
 
-        if (accumulatedDelta.current > 0) {
-          console.log('→ Calling handleNextProduct()');
+      // 최소 거리를 넘으면 즉시 방향 감지 후 트리거
+      if (Math.abs(e.deltaY) >= MIN_DISTANCE) {
+        const direction = e.deltaY > 0 ? 'down' : 'up';
+        console.log('🟢 Direction detected:', direction);
+        console.log('⏱️  Starting 300ms cooldown (REF immediately set to true)');
+
+        // 즉시 ref를 true로 설정 (동기 차단)
+        isTransitioningRef.current = true;
+
+        if (e.deltaY > 0) {
           handleNextProduct();
         } else {
-          console.log('→ Calling handlePrevProduct()');
           handlePrevProduct();
         }
-        accumulatedDelta.current = 0; // 리셋
+        // ref가 이미 true이므로 다음 이벤트는 즉시 차단됨!
+      } else {
+        console.log('⚪ Delta too small, ignored:', e.deltaY);
       }
     };
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [handleNextProduct, handlePrevProduct, isTransitioning, productIndex, filteredProducts.length]);
+  }, [handleNextProduct, handlePrevProduct]);
 
   // 제품이 없으면 렌더링하지 않음
   if (!currentProduct) {
