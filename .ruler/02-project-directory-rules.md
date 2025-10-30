@@ -2,6 +2,7 @@
 
 src/
   components/    # 재사용 가능한 UI 컴포넌트 모음
+  guide/         # 중요한 컴퍼넌트를 생성할때 적용된 가이드 저장&업데이트
 
 
   pages/

@@ -34,17 +34,23 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
     }
   };
 
-  // === Fade out 효과: 줌 상태에서 선택되지 않은 아이템 숨김 ===
-  const targetOpacity = isItemZoomed && !isSelected ? 0 : 1;
+  // === Fade out 효과: 줌 상태에서 모든 아이템 숨김 (ProductDetailView가 대신 표시) ===
+  const targetOpacity = isItemZoomed ? 0 : 1;
+
+  // === 선택된 아이템의 opacity 트랜지션을 빠르게 (GridContainer와 동기화) ===
+  const opacityTransition = isSelected && isItemZoomed
+    ? { opacity: { duration: 0.15, ease: 'easeOut' } } // 선택된 아이템만 빠르게 fade out
+    : TRANSITION.PRODUCT_CARD_LAYOUT;
 
   return (
     <MotionBox
       layout="position"
+      layoutId={ isSelected && isItemZoomed ? `product-image-${product.id}` : undefined }
       onClick={ handleClick }
       initial={ shouldReduceMotion ? false : ANIMATION_STATES.INITIAL }
       animate={ { opacity: targetOpacity, scale: ANIMATION_STATES.ANIMATE.scale } }
       exit={ shouldReduceMotion ? false : ANIMATION_STATES.EXIT }
-      transition={ TRANSITION.PRODUCT_CARD_LAYOUT }
+      transition={ opacityTransition }
       sx={ {
         cursor: 'pointer',
         willChange: 'transform, opacity',

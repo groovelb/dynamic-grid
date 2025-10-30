@@ -24,6 +24,8 @@ function Header({ onNavigate, onFilterChange, onCartClick, currentFilter = 'all'
         alignItems: 'center',
         padding: '20px 40px',
         backgroundColor: '#ffffff',
+        position: 'relative',
+        zIndex: 9999,
       } }
     >
       <Box>

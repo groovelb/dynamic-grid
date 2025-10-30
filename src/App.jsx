@@ -4,6 +4,7 @@ import Header from './components/Header';
 import DynamicGrid from './components/DynamicGrid';
 import GridContainer from './components/GridContainer';
 import DebugCenterLines from './components/DebugCenterLines';
+import ProductDetailView from './components/ProductDetailView';
 import products from './data/products';
 
 function App() {
@@ -133,6 +134,16 @@ function App() {
         </GridContainer>
       </Box>
     </Box>
+
+    {/* 제품 상세 뷰 오버레이 */}
+    {isItemZoomed && selectedProductId && (
+      <ProductDetailView
+        productId={ selectedProductId }
+        filteredProducts={ filteredProducts }
+        onProductChange={ (newId) => setSelectedProductId(newId) }
+        onClose={ () => setSelectedProductId(null) }
+      />
+    )}
     </>
   );
 }
