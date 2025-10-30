@@ -23,7 +23,7 @@ function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId 
         sx={ {
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: '0px',
+          gap: '16px',
           width: '100%',
         } }
       >

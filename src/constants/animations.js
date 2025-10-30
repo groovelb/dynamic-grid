@@ -70,3 +70,8 @@ export const ANIMATION_STATES = {
 export const REDUCED_MOTION = {
   duration: 0,
 };
+
+// === Media Filters ===
+export const MEDIA_FILTERS = {
+  BRIGHTNESS: 'brightness(1.02)',
+};

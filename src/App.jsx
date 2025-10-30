@@ -91,6 +91,7 @@ function App() {
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
+          padding: '40px',
         } }
       >
         <Header

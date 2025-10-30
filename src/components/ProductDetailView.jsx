@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import { MEDIA_FILTERS } from '../constants/animations';
+
+// 비디오 파일인지 확인하는 헬퍼 함수
+const isVideo = (src) => {
+  if (!src) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+  return videoExtensions.some(ext => src.toLowerCase().endsWith(ext));
+};
 
 /**
  * ProductDetailView 컴포넌트
@@ -47,9 +55,22 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
   const [isTransitioning, setIsTransitioning] = useState(false);
   const isTransitioningRef = useRef(false); // 동기 차단용
 
+  // 비디오 재생 제어를 위한 ref
+  const videoRef = useRef(null);
+
+  // 최초 마운트 여부 추적 (줌인 트랜지션 후 자동 재생을 위해)
+  const isInitialMount = useRef(true);
+
+  // 각 제품-이미지 조합별로 재생 완료 여부 추적
+  const playedVideosRef = useRef(new Set());
+
   // === 현재 제품 및 이미지 인덱스 계산 ===
   const currentProduct = filteredProducts[productIndex];
   const currentImageIndex = imageIndexMap[currentProduct?.id] || 0;
+
+  // 현재 미디어 소스 및 타입
+  const currentMediaSrc = currentProduct?.images[currentImageIndex];
+  const isCurrentMediaVideo = isVideo(currentMediaSrc);
 
   // 디버깅: productIndex 변경 추적
   useEffect(() => {
@@ -70,6 +91,21 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
       onProductChange(currentProduct.id);
     }
   }, [productIndex]); // currentProduct, onProductChange는 의도적으로 제외 (무한 루프 방지)
+
+  // 비디오 재생 제어 - currentImageIndex 변경 시
+  useEffect(() => {
+    if (isCurrentMediaVideo && videoRef.current && currentProduct) {
+      const videoKey = `${currentProduct.id}-${currentImageIndex}`;
+      const hasPlayed = playedVideosRef.current.has(videoKey);
+
+      if (!hasPlayed) {
+        // 아직 재생하지 않은 비디오만 재생
+        videoRef.current.play().catch(err => {
+          console.log('Video autoplay prevented:', err);
+        });
+      }
+    }
+  }, [currentImageIndex, currentProduct?.id, isCurrentMediaVideo, currentProduct]);
 
   // === 가로축 네비게이션 (이미지 변경) ===
   const handleNextImage = useCallback(() => {
@@ -338,33 +374,97 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
             }}
             mode="wait"
           >
-            <motion.img
-              key={`${currentProduct.id}-${currentImageIndex}`}
-              src={currentProduct.images[currentImageIndex]}
-              alt={`${currentProduct.name} - Image ${currentImageIndex + 1}`}
-              custom={{
-                navType: lastNavigationType,
-                hDirection: imageDirection,
-                vDirection: verticalDirection
-              }}
-              variants={imageSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
-                y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
-                opacity: { duration: 0.3 },
-              }}
-              onAnimationStart={() => console.log('🎬 Image Animation START:', currentProduct.id, currentImageIndex, lastNavigationType)}
-              onAnimationComplete={() => console.log('🎬 Image Animation COMPLETE:', currentProduct.id, currentImageIndex)}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                position: 'absolute',
-              }}
-            />
+            {isCurrentMediaVideo ? (
+              <motion.video
+                ref={videoRef}
+                key={`${currentProduct.id}-${currentImageIndex}`}
+                src={currentMediaSrc}
+                muted
+                playsInline
+                custom={{
+                  navType: lastNavigationType,
+                  hDirection: imageDirection,
+                  vDirection: verticalDirection
+                }}
+                variants={imageSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                  y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                  opacity: { duration: 0.3 },
+                }}
+                onAnimationStart={() => {
+                  console.log('🎬 Video Animation START:', currentProduct.id, currentImageIndex, lastNavigationType);
+                }}
+                onAnimationComplete={() => {
+                  console.log('🎬 Video Animation COMPLETE:', currentProduct.id, currentImageIndex);
+                  const videoKey = `${currentProduct.id}-${currentImageIndex}`;
+                  const hasPlayed = playedVideosRef.current.has(videoKey);
+
+                  // 애니메이션 완료 후 비디오 재생 (한 번도 재생하지 않은 경우만)
+                  if (videoRef.current && !hasPlayed) {
+                    videoRef.current.play().catch(err => {
+                      console.log('Video autoplay prevented:', err);
+                    });
+                  }
+
+                  // 최초 마운트 플래그 해제
+                  if (isInitialMount.current) {
+                    isInitialMount.current = false;
+                  }
+                }}
+                onEnded={() => {
+                  // 비디오 재생 완료 시 기록
+                  const videoKey = `${currentProduct.id}-${currentImageIndex}`;
+                  playedVideosRef.current.add(videoKey);
+                  console.log('✅ Video playback completed:', videoKey);
+                }}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  position: 'absolute',
+                  filter: MEDIA_FILTERS.BRIGHTNESS,
+                }}
+              />
+            ) : (
+              <motion.img
+                key={`${currentProduct.id}-${currentImageIndex}`}
+                src={currentMediaSrc}
+                alt={`${currentProduct.name} - Image ${currentImageIndex + 1}`}
+                custom={{
+                  navType: lastNavigationType,
+                  hDirection: imageDirection,
+                  vDirection: verticalDirection
+                }}
+                variants={imageSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                  y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                  opacity: { duration: 0.3 },
+                }}
+                onAnimationStart={() => console.log('🎬 Image Animation START:', currentProduct.id, currentImageIndex, lastNavigationType)}
+                onAnimationComplete={() => {
+                  console.log('🎬 Image Animation COMPLETE:', currentProduct.id, currentImageIndex);
+                  // 최초 마운트 플래그 해제
+                  if (isInitialMount.current) {
+                    isInitialMount.current = false;
+                  }
+                }}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  position: 'absolute',
+                  filter: MEDIA_FILTERS.BRIGHTNESS,
+                }}
+              />
+            )}
           </AnimatePresence>
 
           {/* 우측 화살표 버튼 - 고정 */}
