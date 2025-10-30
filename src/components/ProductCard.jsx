@@ -14,11 +14,12 @@ const MotionBox = motion(Box);
  * @param {boolean} usePlaceholder - placeholder 모드 사용 여부 [Optional, 기본값: false]
  * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional, 기본값: false]
  * @param {boolean} isSelected - 선택된 아이템 여부 [Optional, 기본값: false]
+ * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional, 기본값: false]
  *
  * Example usage:
- * <ProductCard product={productData} onClick={handleProductClick} />
+ * <ProductCard product={productData} onClick={handleProductClick} showDebug={true} />
  */
-function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = false, isSelected = false }) {
+function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = false, isSelected = false, showDebug = false }) {
   const [imageError, setImageError] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
@@ -100,56 +101,58 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
       )}
 
       {/* 디버그: 카드 중앙선 */}
-      <Box
-        sx={ {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          pointerEvents: 'none',
-          zIndex: 10,
-        } }
-      >
-        {/* 세로 중앙선 */}
+      {showDebug && (
         <Box
           sx={ {
             position: 'absolute',
-            left: '50%',
             top: 0,
-            width: '1px',
-            height: '100%',
-            backgroundColor: 'blue',
-            opacity: 0.5,
-          } }
-        />
-        {/* 가로 중앙선 */}
-        <Box
-          sx={ {
-            position: 'absolute',
             left: 0,
-            top: '50%',
             width: '100%',
-            height: '1px',
-            backgroundColor: 'blue',
-            opacity: 0.5,
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: 10,
           } }
-        />
-        {/* 중심점 */}
-        <Box
-          sx={ {
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            width: '8px',
-            height: '8px',
-            backgroundColor: 'blue',
-            borderRadius: '50%',
-            transform: 'translate(-50%, -50%)',
-            opacity: 0.7,
-          } }
-        />
-      </Box>
+        >
+          {/* 세로 중앙선 */}
+          <Box
+            sx={ {
+              position: 'absolute',
+              left: '50%',
+              top: 0,
+              width: '1px',
+              height: '100%',
+              backgroundColor: 'blue',
+              opacity: 0.5,
+            } }
+          />
+          {/* 가로 중앙선 */}
+          <Box
+            sx={ {
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              width: '100%',
+              height: '1px',
+              backgroundColor: 'blue',
+              opacity: 0.5,
+            } }
+          />
+          {/* 중심점 */}
+          <Box
+            sx={ {
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: '8px',
+              height: '8px',
+              backgroundColor: 'blue',
+              borderRadius: '50%',
+              transform: 'translate(-50%, -50%)',
+              opacity: 0.7,
+            } }
+          />
+        </Box>
+      )}
     </MotionBox>
   );
 }

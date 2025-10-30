@@ -14,6 +14,10 @@ function App() {
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isItemZoomed, setIsItemZoomed] = useState(false);
 
+  // === Toggle 상태 ===
+  const [showGrid, setShowGrid] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+
   // === Wrapper ref (transform 계산용) ===
   const wrapperRef = useRef(null);
 
@@ -79,7 +83,7 @@ function App() {
 
   return (
     <>
-      <DebugCenterLines wrapperRef={wrapperRef} />
+      {showDebug && <DebugCenterLines wrapperRef={wrapperRef} />}
       <Box
         sx={ {
           width: '100%',
@@ -94,13 +98,18 @@ function App() {
           onCartClick={ handleCartClick }
           currentFilter={ currentFilter }
           isZoomedIn={ isItemZoomed || zoomLevel === 2 }
+          onToggleGrid={ () => setShowGrid(prev => !prev) }
+          onToggleDebug={ () => setShowDebug(prev => !prev) }
+          showGrid={ showGrid }
+          showDebug={ showDebug }
         />
       <Box
         ref={ wrapperRef }
         component="main"
         sx={ {
           flex: 1,
-          overflowY: 'auto',
+          overflowY: isItemZoomed ? 'hidden' : 'auto', // 줌인 시 스크롤 비활성화
+          // backgroundColor: 'red',
           // padding: '40px',
         } }
       >
@@ -108,7 +117,10 @@ function App() {
           selectedProductId={ selectedProductId }
           columns={ getColumns() }
           wrapperRef={ wrapperRef }
+          filteredProducts={ filteredProducts }
           onZoomChange={ handleZoomChange }
+          showGrid={ showGrid }
+          showDebug={ showDebug }
         >
           <DynamicGrid
             products={ filteredProducts }
@@ -116,6 +128,7 @@ function App() {
             columns={ getColumns() }
             selectedProductId={ selectedProductId }
             isItemZoomed={ isItemZoomed }
+            showDebug={ showDebug }
           />
         </GridContainer>
       </Box>

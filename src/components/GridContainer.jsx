@@ -16,19 +16,23 @@ import DebugPanel from './DebugPanel';
  * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
  * @param {number} columns - 그리드 컬럼 수 [Required]
  * @param {RefObject} wrapperRef - Wrapper(main) ref [Required]
+ * @param {Array} filteredProducts - 현재 필터링된 제품 배열 [Required]
  * @param {function} onZoomChange - 줌 상태 변경 콜백 [Optional]
+ * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional]
  *
  * Example usage:
  * <GridContainer
  *   selectedProductId="1"
  *   columns={8}
  *   wrapperRef={wrapperRef}
+ *   filteredProducts={products}
  *   onZoomChange={handleZoomChange}
+ *   showDebug={true}
  * >
  *   <DynamicGrid ... />
  * </GridContainer>
  */
-function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoomChange }) {
+function GridContainer({ children, selectedProductId, columns, wrapperRef, filteredProducts, onZoomChange, showDebug = false }) {
   const containerRef = useRef(null);
   const [transform, setTransform] = useState(getInitialTransform());
   const prevTransformRef = useRef(getInitialTransform()); // 이전 transform 저장
@@ -40,7 +44,8 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoo
         selectedProductId,
         columns,
         containerRef,
-        wrapperRef
+        wrapperRef,
+        filteredProducts
       );
       setTransform(calculated);
       prevTransformRef.current = calculated; // 저장
@@ -62,7 +67,7 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoo
         }
       }, 200); // transition duration과 동일
     }
-  }, [selectedProductId, columns, wrapperRef, onZoomChange]);
+  }, [selectedProductId, columns, wrapperRef, filteredProducts, onZoomChange]);
 
   // === Window resize 시 transform 재계산 ===
   useEffect(() => {
@@ -77,7 +82,8 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoo
           selectedProductId,
           columns,
           containerRef,
-          wrapperRef
+          wrapperRef,
+          filteredProducts
         );
         setTransform(recalculated);
       }, 100);
@@ -88,11 +94,11 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, onZoo
       window.removeEventListener('resize', handleResize);
       clearTimeout(timeoutId);
     };
-  }, [selectedProductId, columns, wrapperRef]);
+  }, [selectedProductId, columns, wrapperRef, filteredProducts]);
 
   return (
     <>
-      <DebugPanel transform={transform} columns={columns} containerRef={containerRef} />
+      {showDebug && <DebugPanel transform={transform} columns={columns} containerRef={containerRef} />}
       <div
         ref={containerRef}
         style={{

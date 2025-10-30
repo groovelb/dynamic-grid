@@ -11,11 +11,12 @@ import ProductCard from './ProductCard';
  * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 8]
  * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
  * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional]
+ * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional]
  *
  * Example usage:
- * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} />
+ * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} showDebug={true} />
  */
-function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId = null, isItemZoomed = false }) {
+function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId = null, isItemZoomed = false, showDebug = false }) {
   return (
     <LayoutGroup>
       <Box
@@ -34,6 +35,7 @@ function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId 
               onClick={ onProductClick }
               isItemZoomed={ isItemZoomed }
               isSelected={ selectedProductId === product.id }
+              showDebug={ showDebug }
             />
           ))}
         </AnimatePresence>
