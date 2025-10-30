@@ -159,6 +159,25 @@ function ProductCard({ product, onClick, usePlaceholder = false, isItemZoomed = 
           />
         </Box>
       )}
+
+      {/* 제품명 */}
+      <Box
+        sx={ {
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          padding: '8px',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          fontSize: '12px',
+          fontWeight: 400,
+          color: '#000',
+          textAlign: 'center',
+          pointerEvents: 'none',
+        } }
+      >
+        { product.name }
+      </Box>
     </MotionBox>
   );
 }
