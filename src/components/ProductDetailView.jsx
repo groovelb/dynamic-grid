@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Box from '@mui/material/Box';
-import ImageCarousel from './ImageCarousel';
+import IconButton from '@mui/material/IconButton';
 
 /**
  * ProductDetailView 컴포넌트
@@ -11,70 +11,265 @@ import ImageCarousel from './ImageCarousel';
  * Props:
  * @param {string|number} productId - 현재 선택된 제품 ID
  * @param {array} filteredProducts - 필터링된 전체 제품 배열
+ * @param {function} onProductChange - 제품 변경 콜백
  * @param {function} onClose - 닫기 콜백
  *
  * Example:
  * <ProductDetailView
  *   productId={selectedProductId}
  *   filteredProducts={filteredProducts}
+ *   onProductChange={(newId) => setSelectedProductId(newId)}
  *   onClose={() => setSelectedProductId(null)}
  * />
  */
-function ProductDetailView({ productId, filteredProducts, onClose }) {
-  // 현재 제품 찾기
-  const currentProduct = filteredProducts.find(p => p.id === productId);
+function ProductDetailView({ productId, filteredProducts, onProductChange, onClose }) {
+  // === 2D Carousel Matrix 상태 관리 ===
 
-  // 상태 관리
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageDirection, setImageDirection] = useState(0);   // 가로 방향
-  const [isInitialRender, setIsInitialRender] = useState(true); // 초기 렌더링 여부
+  // 세로축: 제품 인덱스 (현재 보고 있는 제품의 위치)
+  const [productIndex, setProductIndex] = useState(
+    filteredProducts.findIndex(p => p.id === productId)
+  );
 
-  // 컴포넌트 마운트 시 초기 렌더링 플래그 해제
+  // 가로축: 각 제품별 이미지 인덱스 저장 (제품 ID를 키로 사용)
+  // 예시: { 1: 2, 2: 0, 3: 1 } = 제품1은 3번째 이미지, 제품2는 1번째 이미지 등
+  const [imageIndexMap, setImageIndexMap] = useState({});
+
+  // 세로 전환 방향 (1: 아래로, -1: 위로)
+  const [verticalDirection, setVerticalDirection] = useState(0);
+
+  // 가로 전환 방향 (1: 오른쪽, -1: 왼쪽)
+  const [imageDirection, setImageDirection] = useState(0);
+
+  // 마지막 네비게이션 타입 ('horizontal' | 'vertical')
+  const [lastNavigationType, setLastNavigationType] = useState('horizontal');
+
+  // 전환 중 플래그 (빠른 스크롤 방지)
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 스크롤 누적 관리 (fullpage.js 스타일)
+  const lastScrollTime = useRef(Date.now());
+  const accumulatedDelta = useRef(0);
+
+  // === 현재 제품 및 이미지 인덱스 계산 ===
+  const currentProduct = filteredProducts[productIndex];
+  const currentImageIndex = imageIndexMap[currentProduct?.id] || 0;
+
+  // 디버깅: productIndex 변경 추적
   useEffect(() => {
-    const timer = setTimeout(() => setIsInitialRender(false), 500); // delay + duration
-    return () => clearTimeout(timer);
-  }, []);
+    console.log('🔄 productIndex changed:', {
+      productIndex,
+      currentProduct: currentProduct ? {
+        id: currentProduct.id,
+        name: currentProduct.name
+      } : null,
+      imageIndexMap,
+      currentImageIndex
+    });
+  }, [productIndex, currentProduct, imageIndexMap, currentImageIndex]);
 
-  // 제품 변경 시 이미지 인덱스 초기화 및 초기 렌더링 플래그 재설정
+  // productIndex 변경 시 부모에게 알림
   useEffect(() => {
-    setCurrentImageIndex(0);
-    setIsInitialRender(true);
-    const timer = setTimeout(() => setIsInitialRender(false), 500);
-    return () => clearTimeout(timer);
-  }, [productId]);
+    if (currentProduct && onProductChange) {
+      onProductChange(currentProduct.id);
+    }
+  }, [productIndex]); // currentProduct, onProductChange는 의도적으로 제외 (무한 루프 방지)
 
-  // 이미지 네비게이션 핸들러
+  // === 가로축 네비게이션 (이미지 변경) ===
   const handleNextImage = useCallback(() => {
     if (!currentProduct) return;
     setImageDirection(1);
-    setCurrentImageIndex((prev) => (prev + 1) % currentProduct.images.length);
-  }, [currentProduct]);
+    setLastNavigationType('horizontal');
+
+    const currentIdx = imageIndexMap[currentProduct.id] || 0;
+    const nextIdx = (currentIdx + 1) % currentProduct.images.length;
+
+    setImageIndexMap(prev => ({
+      ...prev,
+      [currentProduct.id]: nextIdx
+    }));
+  }, [currentProduct, imageIndexMap]);
 
   const handlePrevImage = useCallback(() => {
     if (!currentProduct) return;
     setImageDirection(-1);
-    setCurrentImageIndex((prev) =>
-      (prev - 1 + currentProduct.images.length) % currentProduct.images.length
-    );
-  }, [currentProduct]);
+    setLastNavigationType('horizontal');
 
-  // 키보드 이벤트 핸들러 (ESC만)
+    const currentIdx = imageIndexMap[currentProduct.id] || 0;
+    const prevIdx = (currentIdx - 1 + currentProduct.images.length) % currentProduct.images.length;
+
+    setImageIndexMap(prev => ({
+      ...prev,
+      [currentProduct.id]: prevIdx
+    }));
+  }, [currentProduct, imageIndexMap]);
+
+  // === 세로축 네비게이션 (제품 변경) ===
+  const handleNextProduct = useCallback(() => {
+    console.log('📍 handleNextProduct called:', {
+      isTransitioning,
+      productIndex,
+      maxIndex: filteredProducts.length - 1,
+      canProceed: !isTransitioning && productIndex < filteredProducts.length - 1
+    });
+
+    if (isTransitioning || productIndex >= filteredProducts.length - 1) {
+      console.log('⛔ Blocked: isTransitioning or at last product');
+      return;
+    }
+
+    console.log('✅ Proceeding with next product');
+    setVerticalDirection(1);
+    setLastNavigationType('vertical');
+    setIsTransitioning(true);
+    setProductIndex(prev => {
+      console.log(`   productIndex: ${prev} → ${prev + 1}`);
+      return prev + 1;
+    });
+
+    // 전환 완료 후 플래그 해제 (애니메이션 duration과 동기화)
+    setTimeout(() => setIsTransitioning(false), 300);
+  }, [isTransitioning, productIndex, filteredProducts.length]);
+
+  const handlePrevProduct = useCallback(() => {
+    console.log('📍 handlePrevProduct called:', {
+      isTransitioning,
+      productIndex,
+      minIndex: 0,
+      canProceed: !isTransitioning && productIndex > 0
+    });
+
+    if (isTransitioning || productIndex <= 0) {
+      console.log('⛔ Blocked: isTransitioning or at first product');
+      return;
+    }
+
+    console.log('✅ Proceeding with prev product');
+    setVerticalDirection(-1);
+    setLastNavigationType('vertical');
+    setIsTransitioning(true);
+    setProductIndex(prev => {
+      console.log(`   productIndex: ${prev} → ${prev - 1}`);
+      return prev - 1;
+    });
+
+    // 전환 완료 후 플래그 해제
+    setTimeout(() => setIsTransitioning(false), 300);
+  }, [isTransitioning, productIndex]);
+
+  // 키보드 이벤트 핸들러 (ESC, 세로 방향키)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleNextProduct();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handlePrevProduct();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, handleNextProduct, handlePrevProduct]);
+
+  // 휠 이벤트 핸들러 (fullpage.js 스타일 스크롤 누적)
+  useEffect(() => {
+    const handleWheel = (e) => {
+      console.log('🔵 Wheel event triggered:', {
+        deltaY: e.deltaY,
+        accumulatedDelta: accumulatedDelta.current,
+        isTransitioning,
+        productIndex,
+        totalProducts: filteredProducts.length
+      });
+
+      e.preventDefault();
+
+      const now = Date.now();
+      const timeDiff = now - lastScrollTime.current;
+
+      // 150ms 윈도우 내의 스크롤은 누적
+      if (timeDiff < 150) {
+        accumulatedDelta.current += e.deltaY;
+      } else {
+        // 새로운 스크롤 시작
+        accumulatedDelta.current = e.deltaY;
+      }
+
+      lastScrollTime.current = now;
+
+      console.log('🟡 After accumulation:', {
+        accumulatedDelta: accumulatedDelta.current,
+        threshold: 50,
+        willTrigger: Math.abs(accumulatedDelta.current) >= 50
+      });
+
+      // 임계값(50px) 도달 시 제품 전환
+      if (Math.abs(accumulatedDelta.current) >= 50) {
+        const direction = accumulatedDelta.current > 0 ? 'down (next)' : 'up (prev)';
+        console.log('🟢 Threshold reached! Direction:', direction);
+
+        if (accumulatedDelta.current > 0) {
+          console.log('→ Calling handleNextProduct()');
+          handleNextProduct();
+        } else {
+          console.log('→ Calling handlePrevProduct()');
+          handlePrevProduct();
+        }
+        accumulatedDelta.current = 0; // 리셋
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [handleNextProduct, handlePrevProduct, isTransitioning, productIndex, filteredProducts.length]);
 
   // 제품이 없으면 렌더링하지 않음
   if (!currentProduct) {
     return null;
   }
+
+  // 2D 슬라이드 variants (가로/세로 방향에 따라 다르게 동작)
+  const imageSlideVariants = {
+    enter: ({ navType, hDirection, vDirection }) => {
+      if (navType === 'horizontal') {
+        return {
+          x: hDirection > 0 ? 1000 : -1000,
+          y: 0,
+          opacity: 0,
+        };
+      } else {
+        return {
+          x: 0,
+          y: vDirection > 0 ? 600 : -600,
+          opacity: 0,
+        };
+      }
+    },
+    center: {
+      x: 0,
+      y: 0,
+      opacity: 1,
+    },
+    exit: ({ navType, hDirection, vDirection }) => {
+      if (navType === 'horizontal') {
+        return {
+          x: hDirection < 0 ? 1000 : -1000,
+          y: 0,
+          opacity: 0,
+        };
+      } else {
+        return {
+          x: 0,
+          y: vDirection < 0 ? 600 : -600,
+          opacity: 0,
+        };
+      }
+    },
+  };
 
   return (
     <Box
@@ -99,20 +294,138 @@ function ProductDetailView({ productId, filteredProducts, onClose }) {
           width: '100%',
           height: '100%',
           position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <ImageCarousel
-          images={currentProduct.images}
-          currentIndex={currentImageIndex}
-          onNext={handleNextImage}
-          onPrev={handlePrevImage}
-          productName={currentProduct.name}
-          productId={productId}
-          direction={imageDirection}
-          isInitialRender={isInitialRender}
-        />
+        {/* 이미지 컨테이너 (70vw x 70vh) */}
+        <Box
+          sx={{
+            position: 'relative',
+            width: '70vw',
+            height: '70vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+        >
+          {/* 좌측 화살표 버튼 - 고정 */}
+          <IconButton
+            onClick={handlePrevImage}
+            sx={{
+              position: 'absolute',
+              left: 20,
+              zIndex: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              color: '#000',
+              width: 40,
+              height: 40,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 1)',
+              },
+            }}
+          >
+            <Box component="span" sx={{ fontSize: 24, fontWeight: 300 }}>
+              ‹
+            </Box>
+          </IconButton>
 
-        {/* 제품명 */}
+          {/* 중앙 이미지 영역 - 2D 슬라이드 애니메이션 */}
+          <AnimatePresence
+            initial={false}
+            custom={{
+              navType: lastNavigationType,
+              hDirection: imageDirection,
+              vDirection: verticalDirection
+            }}
+            mode="wait"
+          >
+            <motion.img
+              key={`${currentProduct.id}-${currentImageIndex}`}
+              src={currentProduct.images[currentImageIndex]}
+              alt={`${currentProduct.name} - Image ${currentImageIndex + 1}`}
+              custom={{
+                navType: lastNavigationType,
+                hDirection: imageDirection,
+                vDirection: verticalDirection
+              }}
+              variants={imageSlideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                opacity: { duration: 0.3 },
+              }}
+              onAnimationStart={() => console.log('🎬 Image Animation START:', currentProduct.id, currentImageIndex, lastNavigationType)}
+              onAnimationComplete={() => console.log('🎬 Image Animation COMPLETE:', currentProduct.id, currentImageIndex)}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                position: 'absolute',
+              }}
+            />
+          </AnimatePresence>
+
+          {/* 우측 화살표 버튼 - 고정 */}
+          <IconButton
+            onClick={handleNextImage}
+            sx={{
+              position: 'absolute',
+              right: 20,
+              zIndex: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              color: '#000',
+              width: 40,
+              height: 40,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 1)',
+              },
+            }}
+          >
+            <Box component="span" sx={{ fontSize: 24, fontWeight: 300 }}>
+              ›
+            </Box>
+          </IconButton>
+        </Box>
+
+        {/* 인디케이터 - 고정 */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: '12px',
+            marginTop: '24px',
+          }}
+        >
+          {currentProduct.images.map((_, index) => (
+            <Box
+              key={index}
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                backgroundColor: '#000',
+                opacity: index === currentImageIndex ? 1 : 0.3,
+                transition: 'opacity 0.3s ease',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                if (index > currentImageIndex) {
+                  handleNextImage();
+                } else if (index < currentImageIndex) {
+                  handlePrevImage();
+                }
+              }}
+            />
+          ))}
+        </Box>
+
+        {/* 제품명 - 고정 */}
         <Box
           sx={{
             position: 'absolute',

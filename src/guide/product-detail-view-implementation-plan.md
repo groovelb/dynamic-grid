@@ -1,587 +1,531 @@
-# 제품 상세 뷰 구현 계획
+# 제품 상세 뷰 2D Carousel Matrix 구현 계획
 
 ## 📋 개요
 
-선택된 제품이 확대되었을 때 보여지는 제품 탐색 뷰 컴포넌트를 구현합니다.
+제품 상세 뷰를 **2차원 Carousel Matrix**로 구현합니다.
+- **가로 축**: 동일 제품의 여러 이미지 (착용샷 등)
+- **세로 축**: 전체 그리드의 제품들
 
-### 주요 기능
-- **가로 네비게이션**: 제품의 여러 이미지를 carousel loop로 탐색
-- **세로 네비게이션**: 스크롤로 그리드 상의 다음/이전 제품으로 이동
-- **스크롤 트랜지션**: 일반 스크롤이 아닌 carousel 방식의 discrete 전환
+### 핵심 개념
+> "ImageCarousel을 재사용하여 Nested Carousel 구조를 만든다"
+> - 외부: Vertical Product Carousel (세로 스크롤)
+> - 내부: Horizontal Image Carousel (좌우 버튼)
 
 ---
 
-## 🎯 핵심 전략
+## 🎯 요구사항
 
-### 1. 컴포넌트 아키텍처
+1. ✅ **2차원 이동**: 좌우 버튼 (이미지), 세로 스크롤 (제품)
+2. ✅ **가로 인덱스 유지**: 제품 3의 2번째 이미지 → 제품 4로 이동 → 제품 4의 2번째 이미지
+3. ✅ **제품별 인덱스 기억**: 제품 1(이미지 2) → 제품 2(이미지 0) → 다시 제품 1 → 이미지 2 복원
+4. ✅ **ImageCarousel 재사용**: 기존 컴포넌트 수정 없이 내부에 중첩
+5. ✅ **ProductDetailView 고정**: 레이아웃 이동 없이 내용만 carousel
 
-```
-ProductDetailView (메인 컨테이너)
-├── ImageCarousel (가로 캐러셀)
-│   ├── 좌우 화살표 버튼
-│   ├── motion.img (현재 이미지)
-│   └── 이미지 인디케이터 (점 표시)
-└── 세로 스크롤 핸들러 (wheel 이벤트)
-```
+---
 
-### 2. 데이터 구조
+## 📊 데이터 구조
 
-**현재 제품 데이터 구조:**
+### 2D Matrix 개념
 ```javascript
+// 제품 배열 (세로 축)
+filteredProducts = [
+  { id: 1, images: [img1_0, img1_1, img1_2] }, // 행 0
+  { id: 2, images: [img2_0, img2_1, img2_2] }, // 행 1
+  { id: 3, images: [img3_0, img3_1, img3_2] }, // 행 2
+  // ...
+]
+
+// 2D Matrix 시각화
+[
+  [product1_img0, product1_img1, product1_img2], // 행 0: 제품 1
+  [product2_img0, product2_img1, product2_img2], // 행 1: 제품 2
+  [product3_img0, product3_img1, product3_img2], // 행 2: 제품 3
+]
+
+// 현재 위치: (row, col) = (productIndex, imageIndex)
+```
+
+### 상태 관리
+```javascript
+// ProductDetailView.jsx
+const [productIndex, setProductIndex] = useState(0);     // 세로 축 (제품)
+const [imageIndexMap, setImageIndexMap] = useState({});  // 가로 축 (각 제품의 이미지 인덱스)
+const [verticalDirection, setVerticalDirection] = useState(0); // 세로 트랜지션 방향
+
+// imageIndexMap 예시
 {
-  id: number,
-  name: string,
-  images: string[], // 3개의 이미지 배열
-  date: string,
-  category: 'male' | 'female',
-  price: number
+  1: 2,  // 제품 ID 1은 3번째 이미지(index 2)
+  2: 0,  // 제품 ID 2는 1번째 이미지(index 0)
+  3: 1,  // 제품 ID 3은 2번째 이미지(index 1)
+}
+
+// 현재 제품
+const currentProduct = filteredProducts[productIndex];
+
+// 현재 제품의 이미지 인덱스 (없으면 0)
+const currentImageIndex = imageIndexMap[currentProduct.id] || 0;
+```
+
+---
+
+## 🏗️ 컴포넌트 구조 (Nested Carousel)
+
+```
+ProductDetailView (외부 컨테이너)
+├─ 상태: productIndex, imageIndexMap, verticalDirection
+├─ 세로 스크롤 핸들러 (wheel 이벤트)
+├─ 키보드 핸들러 (↑↓ ESC)
+└─ AnimatePresence (세로 트랜지션)
+    └─ motion.div (key: productId)
+        ├─ ImageCarousel (내부 - 가로 carousel)
+        │   ├─ 현재 제품의 images 배열
+        │   ├─ currentImageIndex (imageIndexMap에서 가져옴)
+        │   └─ onIndexChange → imageIndexMap 업데이트
+        └─ 제품명 표시
+```
+
+**핵심:**
+- ImageCarousel은 수정 없이 그대로 사용
+- ProductDetailView가 productIndex와 imageIndexMap을 관리
+- AnimatePresence로 제품 전환 시 세로 슬라이드 트랜지션
+
+---
+
+## 🔄 동작 시나리오
+
+### 시나리오 1: 가로 인덱스 유지 (기본 동작)
+
+```
+초기 상태: 제품 1, 이미지 인덱스 0
+
+1. 좌우 버튼 클릭 (→ →)
+   → 제품 1, 이미지 인덱스 2 (3번째 이미지)
+   → imageIndexMap = { 1: 2 }
+
+2. 세로 스크롤 (아래)
+   → productIndex: 0 → 1
+   → 제품 2, 이미지 인덱스 2 (3번째 이미지) ✅ 유지!
+   → imageIndexMap = { 1: 2 } (제품 2는 아직 없음 → 기본값 2 사용)
+
+3. 세로 스크롤 (아래)
+   → productIndex: 1 → 2
+   → 제품 3, 이미지 인덱스 2 (3번째 이미지) ✅ 계속 유지!
+```
+
+### 시나리오 2: 제품별 독립적 인덱스 기억
+
+```
+1. 제품 1, 이미지 2
+   → imageIndexMap = { 1: 2 }
+
+2. 세로 스크롤 (아래) → 제품 2
+   → 제품 2는 처음 방문 → 이미지 0 (기본값)
+
+3. 좌우 버튼 (→) → 제품 2, 이미지 1
+   → imageIndexMap = { 1: 2, 2: 1 }
+
+4. 세로 스크롤 (아래) → 제품 3
+   → 제품 3은 처음 방문 → 이미지 0 (기본값)
+
+5. 세로 스크롤 (위) → 제품 2
+   → 제품 2, 이미지 1 ✅ 기억함!
+   → imageIndexMap에서 { 2: 1 } 복원
+
+6. 세로 스크롤 (위) → 제품 1
+   → 제품 1, 이미지 2 ✅ 기억함!
+   → imageIndexMap에서 { 1: 2 } 복원
+```
+
+---
+
+## 💻 핵심 구현 로직
+
+### 1. 상태 초기화
+
+```javascript
+function ProductDetailView({ productId, filteredProducts, onClose }) {
+  // 초기 productIndex 찾기
+  const initialIndex = filteredProducts.findIndex(p => p.id === productId);
+
+  const [productIndex, setProductIndex] = useState(initialIndex);
+  const [imageIndexMap, setImageIndexMap] = useState({});
+  const [verticalDirection, setVerticalDirection] = useState(0);
+  const [imageDirection, setImageDirection] = useState(0);
+  const [isInitialRender, setIsInitialRender] = useState(true);
+
+  const currentProduct = filteredProducts[productIndex];
+  const currentImageIndex = imageIndexMap[currentProduct.id] || 0;
+
+  // ...
 }
 ```
 
-### 3. Shared Layout Animation (layoutId)
-
-**목적:** ProductCard에서 ProductDetailView로의 seamless 트랜지션 보장
-
-**문제점:**
-- GridContainer의 transform으로 ProductCard가 화면 중앙으로 이동
-- ProductDetailView는 별도 fixed layer로 overlay
-- 두 이미지가 별개로 존재하면 **위치 불일치** 발생
-
-**해결책:**
-```javascript
-// ProductCard.jsx
-<MotionBox
-  layoutId={isSelected && isItemZoomed ? `product-image-${product.id}` : undefined}
-  ...
->
-  <Box component="img" src={product.images[0]} ... />
-</MotionBox>
-
-// ImageCarousel.jsx (첫 번째 이미지만 layoutId 공유)
-<motion.img
-  key={currentImageIndex}
-  layoutId={currentImageIndex === 0 ? `product-image-${productId}` : undefined}
-  src={images[currentImageIndex]}
-  ...
-/>
-```
-
-**효과:**
-- framer-motion이 자동으로 두 위치 간 morph 애니메이션 생성
-- 100% 위치 연속성 보장
-- ProductCard → ProductDetailView 전환 시 끊김 없음
-
-**주의사항:**
-- ProductCard는 `isItemZoomed`일 때 완전히 숨김 (opacity: 0)
-- 첫 번째 이미지만 layoutId를 유지하여 carousel 전환 시 혼란 방지
-
 ---
 
-## 🔧 기술 스택
+### 2. 세로 스크롤 핸들러 (제품 전환)
 
-### 사용할 라이브러리
-- **framer-motion**: 이미 설치됨, 모든 트랜지션 처리
-- **React Hooks**: useState, useEffect, useCallback
-- **@mui/material**: 일관된 스타일링
-
-### 추가 설치 불필요
-기존 dependencies로 모든 기능 구현 가능
-
----
-
-## 📦 구현할 컴포넌트
-
-### 1. ImageCarousel.jsx
-
-**경로:** `/src/components/ImageCarousel.jsx`
-
-**Props:**
 ```javascript
-{
-  images: string[],           // 이미지 배열
-  currentIndex: number,        // 현재 이미지 인덱스
-  onNext: () => void,          // 다음 이미지
-  onPrev: () => void,          // 이전 이미지
-  productName: string,         // alt 텍스트용
-  productId: string | number   // layoutId 생성용 [필수]
-}
-```
-
-**주요 기능:**
-- AnimatePresence로 이미지 슬라이드 트랜지션
-- 좌우 화살표 버튼 (미니멀 디자인)
-- 하단 인디케이터 (점 3개, 현재 활성화)
-- Loop 네비게이션 지원
-- 키보드 이벤트 (← →)
-
-**트랜지션 설정:**
-```javascript
-// 이미지 슬라이드 애니메이션
-variants={{
-  enter: (direction) => ({
-    x: direction > 0 ? 1000 : -1000,
-    opacity: 0
-  }),
-  center: {
-    x: 0,
-    opacity: 1
-  },
-  exit: (direction) => ({
-    x: direction < 0 ? 1000 : -1000,
-    opacity: 0
-  })
-}}
-transition={{ duration: 0.3, ease: 'easeInOut' }}
-
-// layoutId 설정 (첫 번째 이미지만)
-<motion.img
-  key={currentImageIndex}
-  layoutId={currentImageIndex === 0 ? `product-image-${productId}` : undefined}
-  ...
-/>
-```
-
----
-
-### 2. ProductDetailView.jsx
-
-**경로:** `/src/components/ProductDetailView.jsx`
-
-**Props:**
-```javascript
-{
-  productId: string | number,              // 현재 제품 ID
-  filteredProducts: array,                 // 필터링된 전체 제품 배열
-  onProductChange: (newProductId) => void, // 제품 변경 콜백
-  onClose: () => void                      // 닫기 콜백
-}
-```
-
-**내부 상태:**
-```javascript
-const [currentImageIndex, setCurrentImageIndex] = useState(0);
+// fullpage.js 스타일 스크롤
+const lastScrollTime = useRef(0);
+const accumulatedDelta = useRef(0);
 const [isTransitioning, setIsTransitioning] = useState(false);
-const [scrollDirection, setScrollDirection] = useState(0); // 세로
-const [imageDirection, setImageDirection] = useState(0);   // 가로
-```
 
-**주요 기능:**
-- 전체 화면 오버레이 (position: fixed, z-index: 1000)
-- ImageCarousel 통합
-- 세로 스크롤 핸들러 (wheel 이벤트)
-- 제품 간 네비게이션 (↑ ↓)
-- 키보드 이벤트 통합 (ESC, ↑, ↓)
-- 경계 체크 (첫/마지막 제품)
+const handleWheel = useCallback((e) => {
+  e.preventDefault();
+
+  if (isTransitioning) return;
+
+  const now = Date.now();
+  const timeSinceLastScroll = now - lastScrollTime.current;
+
+  // deltaY 누적
+  accumulatedDelta.current += e.deltaY;
+
+  // 임계값: 최소 50px 이상 스크롤해야 전환
+  const THRESHOLD = 50;
+
+  // 짧은 시간 내 스크롤이 계속되면 누적
+  if (timeSinceLastScroll < 150) {
+    lastScrollTime.current = now;
+
+    // 임계값 도달하면 전환
+    if (Math.abs(accumulatedDelta.current) >= THRESHOLD) {
+      const direction = accumulatedDelta.current > 0 ? 1 : -1;
+      const newIndex = productIndex + direction;
+
+      // 경계 체크
+      if (newIndex >= 0 && newIndex < filteredProducts.length) {
+        setVerticalDirection(direction);
+        setProductIndex(newIndex);
+        setIsTransitioning(true);
+        setTimeout(() => setIsTransitioning(false), 500);
+      }
+
+      // 초기화
+      accumulatedDelta.current = 0;
+      lastScrollTime.current = now;
+    }
+    return;
+  }
+
+  // 새로운 스크롤 시작
+  accumulatedDelta.current = e.deltaY;
+  lastScrollTime.current = now;
+
+  // 즉시 임계값 도달하면 전환
+  if (Math.abs(accumulatedDelta.current) >= THRESHOLD) {
+    const direction = accumulatedDelta.current > 0 ? 1 : -1;
+    const newIndex = productIndex + direction;
+
+    if (newIndex >= 0 && newIndex < filteredProducts.length) {
+      setVerticalDirection(direction);
+      setProductIndex(newIndex);
+      setIsTransitioning(true);
+      setTimeout(() => setIsTransitioning(false), 500);
+    }
+
+    accumulatedDelta.current = 0;
+  }
+}, [isTransitioning, productIndex, filteredProducts.length]);
+
+// 이벤트 리스너 등록
+useEffect(() => {
+  window.addEventListener('wheel', handleWheel, { passive: false });
+  return () => window.removeEventListener('wheel', handleWheel);
+}, [handleWheel]);
+```
 
 ---
 
-## 🎨 UI/UX 디자인
+### 3. 가로 이미지 핸들러 (이미지 전환)
 
-### 레이아웃 구조
+```javascript
+// 다음 이미지
+const handleNextImage = useCallback(() => {
+  if (!currentProduct) return;
 
+  const newIndex = (currentImageIndex + 1) % currentProduct.images.length;
+
+  setImageDirection(1);
+  setImageIndexMap(prev => ({
+    ...prev,
+    [currentProduct.id]: newIndex
+  }));
+}, [currentProduct, currentImageIndex]);
+
+// 이전 이미지
+const handlePrevImage = useCallback(() => {
+  if (!currentProduct) return;
+
+  const newIndex = (currentImageIndex - 1 + currentProduct.images.length) % currentProduct.images.length;
+
+  setImageDirection(-1);
+  setImageIndexMap(prev => ({
+    ...prev,
+    [currentProduct.id]: newIndex
+  }));
+}, [currentProduct, currentImageIndex]);
 ```
-┌─────────────────────────────────────┐
-│  [Header - 기존 헤더 유지]           │
-├─────────────────────────────────────┤
-│                                     │
-│                                     │
-│         ◄    [이미지]    ►          │  ← 좌우 화살표
-│                                     │
-│              ● ○ ○                  │  ← 인디케이터
-│                                     │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-### 스타일 가이드
-
-**컨테이너:**
-- position: fixed
-- width: 100vw
-- height: 100vh
-- backgroundColor: white
-- zIndex: 1000
-- 상단에 헤더 공간 확보 (padding-top)
-
-**이미지 영역:**
-- 중앙 정렬 (flexbox)
-- max-width: 70vw
-- max-height: 70vh
-- object-fit: contain
-- aspect-ratio 유지
-
-**화살표 버튼:**
-- 위치: 이미지 좌우
-- 디자인: 미니멀 `<` / `>` 기호
-- 색상: 검정 (#000)
-- 배경: 투명 또는 반투명 흰색
-- hover: opacity 변화
-- 크기: 40px × 40px
-
-**인디케이터:**
-- 위치: 이미지 하단 중앙
-- 디자인: 원형 점 (border-radius: 50%)
-- 크기: 8px
-- 간격: 12px
-- 활성: opacity 1, backgroundColor: #000
-- 비활성: opacity 0.3, backgroundColor: #000
 
 ---
 
-## ⌨️ 키보드 네비게이션
+### 4. 키보드 네비게이션
 
 ```javascript
 useEffect(() => {
   const handleKeyDown = (e) => {
-    if (isTransitioning) return; // 트랜지션 중 무시
+    if (isTransitioning) return;
 
     switch(e.key) {
-      case 'ArrowLeft':
-        e.preventDefault();
-        handlePrevImage();
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        handleNextImage();
-        break;
       case 'ArrowUp':
         e.preventDefault();
-        handlePrevProduct();
+        if (productIndex > 0) {
+          setVerticalDirection(-1);
+          setProductIndex(prev => prev - 1);
+          setIsTransitioning(true);
+          setTimeout(() => setIsTransitioning(false), 500);
+        }
         break;
+
       case 'ArrowDown':
         e.preventDefault();
-        handleNextProduct();
+        if (productIndex < filteredProducts.length - 1) {
+          setVerticalDirection(1);
+          setProductIndex(prev => prev + 1);
+          setIsTransitioning(true);
+          setTimeout(() => setIsTransitioning(false), 500);
+        }
         break;
+
       case 'Escape':
         e.preventDefault();
         onClose();
+        break;
+
+      default:
         break;
     }
   };
 
   window.addEventListener('keydown', handleKeyDown);
   return () => window.removeEventListener('keydown', handleKeyDown);
-}, [isTransitioning, currentImageIndex, productId]);
+}, [isTransitioning, productIndex, filteredProducts.length, onClose]);
 ```
 
 ---
 
-## 🔄 핵심 로직
-
-### 1. 가로 이미지 네비게이션 (Loop)
+### 5. 렌더링 (Nested Carousel)
 
 ```javascript
-// 다음 이미지
-const handleNextImage = () => {
-  setImageDirection(1);
-  setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-};
-
-// 이전 이미지
-const handlePrevImage = () => {
-  setImageDirection(-1);
-  setCurrentImageIndex((prev) =>
-    (prev - 1 + product.images.length) % product.images.length
-  );
-};
-```
-
-**특징:**
-- Modulo 연산으로 loop 구현
-- direction 상태로 슬라이드 방향 제어
-- 즉시 반응 (트랜지션 동안 입력 허용 가능)
-
----
-
-### 2. 세로 제품 네비게이션
-
-```javascript
-// Wheel 이벤트 핸들러
-const handleWheel = useCallback((e) => {
-  e.preventDefault();
-
-  // 트랜지션 중이면 무시
-  if (isTransitioning) return;
-
-  const direction = e.deltaY > 0 ? 1 : -1;
-
-  // 현재 제품 인덱스
-  const currentIndex = filteredProducts.findIndex(p => p.id === productId);
-
-  // 다음 인덱스 계산
-  const nextIndex = currentIndex + direction;
-
-  // 경계 체크
-  if (nextIndex < 0 || nextIndex >= filteredProducts.length) return;
-
-  // 트랜지션 시작
-  setIsTransitioning(true);
-  setScrollDirection(direction);
-
-  // 제품 변경
-  const nextProduct = filteredProducts[nextIndex];
-  onProductChange(nextProduct.id);
-
-  // 이미지 인덱스 초기화
-  setCurrentImageIndex(0);
-
-  // 트랜지션 완료 후 플래그 해제
-  setTimeout(() => setIsTransitioning(false), 500);
-}, [isTransitioning, productId, filteredProducts, onProductChange]);
-
-// 이벤트 리스너 등록
-useEffect(() => {
-  const container = containerRef.current;
-  if (!container) return;
-
-  // passive: false로 preventDefault 활성화
-  container.addEventListener('wheel', handleWheel, { passive: false });
-
-  return () => {
-    container.removeEventListener('wheel', handleWheel);
-  };
-}, [handleWheel]);
-```
-
-**주요 포인트:**
-- `isTransitioning` 플래그로 중복 방지
-- 경계 체크로 첫/마지막 제품에서 무시
-- 500ms 트랜지션과 동기화
-- `passive: false`로 기본 스크롤 방지
-
----
-
-### 3. 제품 전환 트랜지션
-
-```javascript
-<AnimatePresence mode="wait" custom={scrollDirection}>
-  <motion.div
-    key={productId}
-    custom={scrollDirection}
-    initial={{
-      y: scrollDirection > 0 ? 100 : -100,
-      opacity: 0
-    }}
-    animate={{
-      y: 0,
-      opacity: 1
-    }}
-    exit={{
-      y: scrollDirection > 0 ? -100 : 100,
-      opacity: 0
-    }}
-    transition={{
-      duration: 0.5,
-      ease: 'easeInOut'
+return (
+  <Box
+    component={motion.div}
+    initial={{ opacity: 0, filter: 'blur(10px)' }}
+    animate={{ opacity: 1, filter: 'blur(0px)' }}
+    transition={{ duration: 0.3, delay: 0.1 }}
+    sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 100,
+      overflow: 'hidden',
+      pointerEvents: 'auto',
+      paddingTop: '80px',
     }}
   >
-    <ImageCarousel ... />
-  </motion.div>
-</AnimatePresence>
-```
+    {/* 세로 트랜지션 (제품 전환) */}
+    <AnimatePresence mode="wait" custom={verticalDirection}>
+      <Box
+        component={motion.div}
+        key={currentProduct.id}
+        custom={verticalDirection}
+        initial={{
+          y: verticalDirection > 0 ? '100%' : verticalDirection < 0 ? '-100%' : 0,
+          opacity: 0,
+        }}
+        animate={{
+          y: 0,
+          opacity: 1,
+        }}
+        exit={{
+          y: verticalDirection > 0 ? '-100%' : verticalDirection < 0 ? '100%' : 0,
+          opacity: 0,
+        }}
+        transition={{
+          duration: 0.5,
+          ease: 'easeInOut',
+        }}
+        sx={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+        }}
+      >
+        {/* 가로 캐러셀 (이미지 전환) */}
+        <ImageCarousel
+          images={currentProduct.images}
+          currentIndex={currentImageIndex}
+          onNext={handleNextImage}
+          onPrev={handlePrevImage}
+          productName={currentProduct.name}
+          productId={currentProduct.id}
+          direction={imageDirection}
+          isInitialRender={isInitialRender}
+        />
 
-**특징:**
-- mode="wait": 이전 제품 exit 완료 후 다음 제품 enter
-- custom으로 스크롤 방향 전달
-- 세로 슬라이드 + fade 효과
-
----
-
-## 📝 App.jsx 통합
-
-### 필요한 수정사항
-
-**1. ProductDetailView import 및 렌더링:**
-
-```javascript
-import ProductDetailView from './components/ProductDetailView';
-
-// ... 기존 코드 ...
-
-return (
-  <>
-    {showDebug && <DebugCenterLines wrapperRef={wrapperRef} />}
-    <Box sx={{ ... }}>
-      <Header ... />
-      <Box ref={wrapperRef} component="main" sx={{ ... }}>
-        <GridContainer ...>
-          <DynamicGrid ... />
-        </GridContainer>
+        {/* 제품명 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 40,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '12px 24px',
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            fontSize: '16px',
+            fontWeight: 400,
+            color: '#000',
+            textAlign: 'center',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {currentProduct.name}
+        </Box>
       </Box>
-    </Box>
-
-    {/* 제품 상세 뷰 오버레이 */}
-    {isItemZoomed && (
-      <ProductDetailView
-        productId={selectedProductId}
-        filteredProducts={filteredProducts}
-        onProductChange={(newId) => setSelectedProductId(newId)}
-        onClose={() => setSelectedProductId(null)}
-      />
-    )}
-  </>
+    </AnimatePresence>
+  </Box>
 );
 ```
 
-**2. 추가 상태 (필요한 경우):**
-- 기존 `selectedProductId`, `isItemZoomed`로 충분
-- 추가 상태 불필요
+---
+
+## 🎨 트랜지션 상세
+
+### 세로 트랜지션 (제품 전환)
+```javascript
+// 아래로 스크롤 (다음 제품)
+initial: { y: '100%', opacity: 0 }  // 화면 아래에서 시작
+animate: { y: 0, opacity: 1 }        // 중앙으로 이동
+exit: { y: '-100%', opacity: 0 }    // 화면 위로 사라짐
+
+// 위로 스크롤 (이전 제품)
+initial: { y: '-100%', opacity: 0 } // 화면 위에서 시작
+animate: { y: 0, opacity: 1 }        // 중앙으로 이동
+exit: { y: '100%', opacity: 0 }     // 화면 아래로 사라짐
+
+// Duration: 0.5s, easeInOut
+```
+
+### 가로 트랜지션 (이미지 전환)
+- ImageCarousel 내부에서 처리 (기존 로직 유지)
+- 좌우 슬라이드 + fade
 
 ---
 
 ## 🚀 구현 순서
 
-### Phase 1: ImageCarousel (30분)
-1. 컴포넌트 파일 생성
-2. 기본 레이아웃 구성
-3. AnimatePresence 슬라이드 구현
-4. 좌우 버튼 + 키보드 이벤트
-5. 인디케이터 추가
+### Phase 1: 상태 추가 (10분)
+- [ ] productIndex state
+- [ ] imageIndexMap state
+- [ ] verticalDirection state
+- [ ] isTransitioning state
+- [ ] lastScrollTime, accumulatedDelta refs
 
-### Phase 2: ProductDetailView 기본 구조 (20분)
-1. 컴포넌트 파일 생성
-2. 전체 화면 오버레이 레이아웃
-3. ImageCarousel 통합
-4. ESC 키로 닫기 기능
+### Phase 2: 세로 스크롤 핸들러 (20분)
+- [ ] handleWheel 함수 구현
+- [ ] fullpage.js 스타일 누적 로직
+- [ ] 경계 체크
+- [ ] 이벤트 리스너 등록
 
-### Phase 3: 세로 스크롤 네비게이션 (30분)
-1. wheel 이벤트 핸들러 구현
-2. 제품 변경 로직
-3. 트랜지션 효과 추가
-4. 경계 체크
+### Phase 3: 가로 이미지 핸들러 수정 (15분)
+- [ ] handleNextImage → imageIndexMap 업데이트
+- [ ] handlePrevImage → imageIndexMap 업데이트
+- [ ] currentImageIndex 계산 로직
 
-### Phase 4: App.jsx 통합 (10분)
-1. ProductDetailView import
-2. 조건부 렌더링 추가
-3. Props 연결
+### Phase 4: 세로 트랜지션 추가 (15분)
+- [ ] AnimatePresence 추가
+- [ ] motion.div로 Box 래핑
+- [ ] initial/animate/exit variants
+- [ ] key={currentProduct.id}
 
-### Phase 5: ProductCard 수정 (layoutId) (15분)
-1. layoutId prop 추가
-2. opacity 로직 수정 (isItemZoomed일 때 완전 숨김)
-3. MotionBox에 layoutId 적용
-4. 트랜지션 테스트
+### Phase 5: 키보드 네비게이션 (10분)
+- [ ] ArrowUp/Down 추가
+- [ ] 경계 체크
+- [ ] ESC 유지
 
-### Phase 6: 테스트 & 최적화 (20분)
-1. 모든 키보드 단축키 테스트
-2. 빠른 스크롤 처리 확인
-3. 첫/마지막 제품 경계 테스트
-4. 필터 변경 시 동작 확인
-5. layoutId 트랜지션 확인
-6. 성능 체크 (60fps 유지)
+### Phase 6: 테스트 (20분)
+- [ ] 가로 이동 → 세로 이동 → 인덱스 유지 확인
+- [ ] 제품별 인덱스 기억 확인
+- [ ] 경계 케이스 (첫/마지막 제품)
+- [ ] 빠른 스크롤 처리
+- [ ] 키보드 네비게이션
 
-**총 예상 시간: 약 2시간 15분**
+**총 예상 시간: 약 1시간 30분**
 
 ---
 
-## 🔍 예상 이슈 및 해결책
+## ⚠️ 주의사항
 
-| 이슈 | 원인 | 해결책 |
-|------|------|--------|
-| **위치 불일치 (가장 중요)** | ProductCard와 ProductDetailView 별개 레이어 | **layoutId 사용으로 seamless morph** |
-| ProductCard와 이미지 중복 표시 | opacity 로직 미흡 | isItemZoomed일 때 모든 카드 opacity: 0 |
-| 빠른 스크롤로 여러 제품 건너뜀 | wheel 이벤트 중복 발생 | `isTransitioning` 플래그로 방지 |
-| 첫/마지막 제품에서 에러 | 배열 경계 초과 | nextIndex 경계 체크 후 early return |
-| 메인 페이지 스크롤과 충돌 | 이벤트 전파 | `isItemZoomed`일 때만 핸들러 등록 |
-| 이미지 로딩 지연 | 네트워크 지연 | placeholder 또는 loading skeleton |
-| 키보드 이벤트 충돌 | 다른 컴포넌트 리스너 | `e.stopPropagation()` 추가 |
-| 애니메이션 끊김 | 과도한 리렌더링 | useCallback, useMemo 최적화 |
-| 필터 변경 시 제품 사라짐 | filteredProducts 변경 | useEffect로 감지 및 닫기 |
+### 1. ImageCarousel Props 변경 없음
+- 기존 props 그대로 사용
+- `currentIndex`만 동적으로 계산해서 전달
 
----
+### 2. productId vs productIndex
+- productId: 제품의 고유 ID (1, 2, 3...)
+- productIndex: filteredProducts 배열에서의 인덱스 (0, 1, 2...)
+- 혼동 주의!
 
-## 🎯 성능 최적화
+### 3. imageIndexMap 키
+- 키는 productId (숫자)
+- 값은 imageIndex (숫자)
 
-### 1. 메모이제이션
-```javascript
-const handleWheel = useCallback((e) => { ... }, [deps]);
-const handleKeyDown = useCallback((e) => { ... }, [deps]);
-```
+### 4. 초기 렌더링
+- 첫 진입 시 verticalDirection = 0 (트랜지션 없음)
+- 이후 스크롤부터 트랜지션 적용
 
-### 2. 이미지 프리로딩
-```javascript
-useEffect(() => {
-  // 다음 제품 이미지 미리 로드
-  const nextIndex = currentIndex + 1;
-  if (nextIndex < filteredProducts.length) {
-    const img = new Image();
-    img.src = filteredProducts[nextIndex].images[0];
-  }
-}, [currentIndex, filteredProducts]);
-```
-
-### 3. GPU 가속
-```css
-.image-carousel {
-  will-change: transform;
-  transform: translateZ(0);
-}
-```
+### 5. 필터 변경 시
+- App.jsx에서 이미 처리중 (useEffect)
+- 선택된 제품이 사라지면 자동 닫기
 
 ---
 
-## ✅ 완료 체크리스트
+## 🎯 기대 효과
 
-### ImageCarousel
-- [ ] 컴포넌트 파일 생성
-- [ ] 슬라이드 트랜지션 구현
-- [ ] layoutId 적용 (첫 번째 이미지만)
-- [ ] 좌우 버튼 UI
-- [ ] 인디케이터 UI
-- [ ] Loop 로직
-- [ ] 키보드 이벤트 (← →)
-- [ ] 반응형 디자인
+1. ✅ **직관적인 2D 네비게이션**
+   - 좌우: 같은 제품의 다른 각도
+   - 상하: 다른 제품으로 이동
 
-### ProductDetailView
-- [ ] 컴포넌트 파일 생성
-- [ ] 전체 화면 레이아웃
-- [ ] ImageCarousel 통합 (productId 전달)
-- [ ] wheel 이벤트 핸들러
-- [ ] 제품 전환 트랜지션
-- [ ] 키보드 이벤트 (ESC, ↑, ↓)
-- [ ] 경계 체크 로직
-- [ ] isTransitioning 방지 로직
+2. ✅ **부드러운 UX**
+   - fullpage.js 스타일 스크롤
+   - 세로/가로 모두 트랜지션 적용
 
-### ProductCard 수정
-- [ ] layoutId prop 추가 (isSelected && isItemZoomed)
-- [ ] opacity 로직 수정 (isItemZoomed → 0)
-- [ ] MotionBox에 layoutId 적용
-- [ ] 트랜지션 테스트
+3. ✅ **상태 기억**
+   - 제품 1의 이미지 2 → 제품 2 → 다시 제품 1 → 이미지 2 복원
 
-### 통합
-- [ ] App.jsx에 추가
-- [ ] Props 연결
-- [ ] 상태 동기화
-- [ ] 전체 플로우 테스트
+4. ✅ **코드 재사용**
+   - ImageCarousel 수정 없이 활용
+   - 명확한 계층 구조
 
-### 테스트
-- [ ] layoutId seamless 트랜지션
-- [ ] 가로 네비게이션 (버튼, 키보드)
-- [ ] 세로 네비게이션 (스크롤, 키보드)
-- [ ] 경계 케이스 (첫/마지막)
-- [ ] 빠른 입력 처리
-- [ ] 필터 변경 시 동작
-- [ ] ESC로 닫기
-- [ ] 성능 확인 (60fps)
+5. ✅ **확장 가능**
+   - 제품 정보 추가 용이
+   - 다른 인터랙션 추가 가능
 
 ---
 
 ## 📚 참고 자료
 
-### Framer Motion 문서
+### Framer Motion
 - AnimatePresence: https://www.framer.com/motion/animate-presence/
 - Custom variants: https://www.framer.com/motion/animation/#custom
-- Gestures: https://www.framer.com/motion/gestures/
+- Nested animations: https://www.framer.com/motion/animation/#animating-children
 
-### 스크롤 이벤트
-- Wheel event: https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event
+### Wheel Event
+- MDN Wheel: https://developer.mozilla.org/en-US/docs/Web/API/Element/wheel_event
 - Passive listeners: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#improving_scroll_performance_with_passive_listeners
 
----
-
-## 🎉 기대 효과
-
-1. **부드러운 UX**: 모든 전환에 트랜지션 적용
-2. **직관적 네비게이션**: 키보드/스크롤/클릭 모두 지원
-3. **높은 성능**: 60fps 유지
-4. **미니멀 디자인**: 프로젝트 컨셉에 부합
-5. **확장 가능**: 제품 정보 추가 등 추후 확장 용이
+### Patterns
+- Nested Swiper: https://swiperjs.com/demos#nested
+- 2D Carousel: https://www.framer.com/motion/examples/#drag-to-reorder
