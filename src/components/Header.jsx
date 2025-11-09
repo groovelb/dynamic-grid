@@ -1,6 +1,15 @@
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-import { LayoutGrid, Shirt, PersonStanding, Circle, ShoppingBag } from 'lucide-react';
+import {
+  GridFour,
+  TShirt,
+  Dress,
+  CaretLeft,
+  Plus,
+  ShoppingCart,
+  Circle
+} from '@phosphor-icons/react';
 
 /**
  * Header 컴포넌트
@@ -20,7 +29,10 @@ import { LayoutGrid, Shirt, PersonStanding, Circle, ShoppingBag } from 'lucide-r
  * Example usage:
  * <Header onFilterChange={handleFilter} currentFilter="male" currentColorFilter="white" isZoomedIn={false} isZoomEnabled={true} headerPadding="20px 40px" buttonSize={44} />
  */
-function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, currentFilter = 'all', currentColorFilter = 'all', isZoomedIn = false, isZoomEnabled = true, headerPadding = '20px 40px', buttonSize = 44 }) {
+function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, currentFilter = 'all', currentColorFilter = 'all', isZoomedIn = false, isZoomEnabled = true, headerPadding = '20px 40px', buttonSize = 48 }) {
+  
+  const IconSize = 32;
+  
   return (
     <Box
       component="header"
@@ -38,14 +50,11 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
       } }
     >
       <Box>
-        <Button
+        <IconButton
           onClick={ onNavigate }
           sx={ {
-            padding: '12px',
-            minWidth: `${buttonSize}px`,
             width: `${buttonSize}px`,
             height: `${buttonSize}px`,
-            fontSize: '16px',
             borderRadius: 0,
             color: '#000000',
             // Mobile에서 zoom 비활성화 시 + 버튼만 숨김 (< 버튼은 유지)
@@ -56,67 +65,64 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
             },
           } }
         >
-          { isZoomedIn ? '<' : '+' }
-        </Button>
+          { isZoomedIn ? <CaretLeft size={IconSize} weight="light" /> : <Plus size={IconSize} weight="light" /> }
+        </IconButton>
       </Box>
 
-      <Box sx={ { display: 'flex', gap: '20px' } }>
+      <Box sx={ { display: isZoomedIn ? 'none' : 'flex', gap: '20px' } }>
         {/* 성별 필터 */}
         <Box sx={ { display: 'flex', gap: '8px' } }>
-          <Button
+          <IconButton
             onClick={ () => onFilterChange && onFilterChange('all') }
             sx={ {
-              padding: '12px',
-              minWidth: `${buttonSize}px`,
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentFilter === 'all' ? '0.5px solid #000000' : 'none',
+              opacity: currentFilter === 'all' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
-            <LayoutGrid size={20} strokeWidth={1.5} />
-          </Button>
-          <Button
+            <GridFour size={IconSize} weight="light" />
+          </IconButton>
+          <IconButton
             onClick={ () => onFilterChange && onFilterChange('male') }
             sx={ {
-              padding: '12px',
-              minWidth: `${buttonSize}px`,
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentFilter === 'male' ? '0.5px solid #000000' : 'none',
+              opacity: currentFilter === 'male' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
-            <Shirt size={20} strokeWidth={1.5} />
-          </Button>
-          <Button
+            <TShirt size={IconSize} weight="light" />
+          </IconButton>
+          <IconButton
             onClick={ () => onFilterChange && onFilterChange('female') }
             sx={ {
-              padding: '12px',
-              minWidth: `${buttonSize}px`,
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentFilter === 'female' ? '0.5px solid #000000' : 'none',
+              opacity: currentFilter === 'female' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
-            <PersonStanding size={20} strokeWidth={1.5} />
-          </Button>
+            <Dress size={IconSize} weight="light" />
+          </IconButton>
         </Box>
 
         {/* 색상 필터 */}
@@ -124,76 +130,62 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
           <Button
             onClick={ () => onColorFilterChange && onColorFilterChange('all') }
             sx={ {
-              padding: '12px',
               minWidth: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               fontSize: '12px',
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentColorFilter === 'all' ? '0.5px solid #000000' : 'none',
+              opacity: currentColorFilter === 'all' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
             all
           </Button>
-          <Button
+          <IconButton
             onClick={ () => onColorFilterChange && onColorFilterChange('white') }
             sx={ {
-              padding: '12px',
-              minWidth: `${buttonSize}px`,
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentColorFilter === 'white' ? '0.5px solid #000000' : 'none',
+              opacity: currentColorFilter === 'white' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
-            <Circle
-              size={20}
-              strokeWidth={2}
-              stroke="#000000"
-              fill="none"
-            />
-          </Button>
-          <Button
+            <Circle size={IconSize} weight="light" />
+          </IconButton>
+          <IconButton
             onClick={ () => onColorFilterChange && onColorFilterChange('black') }
             sx={ {
-              padding: '12px',
-              minWidth: `${buttonSize}px`,
               width: `${buttonSize}px`,
               height: `${buttonSize}px`,
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              border: currentColorFilter === 'black' ? '0.5px solid #000000' : 'none',
+              opacity: currentColorFilter === 'black' ? 1 : 0.7,
               '&:hover': {
-                border: '0.5px solid #000000',
+                opacity: 1,
+                backgroundColor: '#ffffff',
               },
             } }
           >
-            <Circle
-              size={20}
-              strokeWidth={2}
-              stroke="#000000"
-              fill="#000000"
-            />
-          </Button>
+            <Circle size={IconSize} weight="fill" />
+          </IconButton>
         </Box>
       </Box>
 
       <Box>
-        <Button
+        <IconButton
           onClick={ onCartClick }
           sx={ {
-            padding: '12px',
-            minWidth: `${buttonSize}px`,
             width: `${buttonSize}px`,
             height: `${buttonSize}px`,
             borderRadius: 0,
@@ -202,11 +194,12 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
             border: 'none',
             '&:hover': {
               border: '2px solid #000000',
+              backgroundColor: '#ffffff',
             },
           } }
         >
-          <ShoppingBag size={20} strokeWidth={1.5} />
-        </Button>
+          <ShoppingCart size={IconSize} weight="light" />
+        </IconButton>
       </Box>
     </Box>
   );
