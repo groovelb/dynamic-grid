@@ -35,7 +35,6 @@ const isVideo = (src) => {
 function ProductDetailView({ productId, filteredProducts, onProductChange, onClose, config }) {
   // === 반응형 설정 (기본값: Full HD) ===
   const detailViewWidth = config?.detailViewWidth || '70vw';
-  const detailViewHeight = config?.detailViewHeight || '70vh';
   const detailArrowSize = config?.detailArrowSize || 40;
   const detailArrowPosition = config?.detailArrowPosition || 20;
   const detailIndicatorSize = config?.detailIndicatorSize || 8;
@@ -353,12 +352,13 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
           justifyContent: 'center',
         }}
       >
-        {/* 이미지 컨테이너 (반응형 크기) */}
+        {/* 이미지 컨테이너 (반응형 크기, 1:1 비율) */}
         <Box
           sx={{
             position: 'relative',
             width: detailViewWidth,
-            height: detailViewHeight,
+            mt:'-80px',
+            aspectRatio: '1/1',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -551,7 +551,6 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
             left: '50%',
             transform: 'translateX(-50%)',
             padding: '12px 24px',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
             fontSize: '16px',
             fontWeight: 400,
             color: '#000',

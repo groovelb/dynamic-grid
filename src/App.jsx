@@ -94,10 +94,11 @@ function App() {
       <Box
         sx={ {
           width: '100%',
-          height: '100vh',
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
           padding: config.containerPadding,
+          backgroundColor: '#ffffff',
         } }
       >
         <Header

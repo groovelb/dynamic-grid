@@ -33,13 +33,23 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        html: {
+          height: '100%',
+          overflow: 'hidden',
+        },
         body: {
+          height: '100%',
+          overflow: 'hidden',
           // 스크롤바 숨김 (기능은 유지)
           '&::-webkit-scrollbar': {
             display: 'none',
           },
           '-ms-overflow-style': 'none',
           'scrollbar-width': 'none',
+        },
+        '#root': {
+          height: '100%',
+          overflow: 'hidden',
         },
         '*': {
           // 모든 요소의 스크롤바 숨김
