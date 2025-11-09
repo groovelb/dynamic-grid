@@ -237,11 +237,16 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, handleNextProduct, handlePrevProduct]);
 
-  // 휠 이벤트 핸들러 (최소 거리 감지 후 즉시 트리거 + duration 동안 무시)
+  // 휠 이벤트 핸들러 (데스크톱 전용)
   useEffect(() => {
     const MIN_DISTANCE = 10; // 방향 감지를 위한 최소 거리 (매우 낮음)
 
     const handleWheel = (e) => {
+      // 터치 이벤트는 제외 (모바일 스크롤 허용)
+      if (e.type === 'touchmove' || e.type === 'touchstart' || e.type === 'touchend') {
+        return;
+      }
+
       e.preventDefault();
 
       console.log('🔵 Wheel event:', {
@@ -277,6 +282,49 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
 
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
+  }, [handleNextProduct, handlePrevProduct]);
+
+  // 터치 스와이프 핸들러 (모바일 전용)
+  useEffect(() => {
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    const handleTouchStart = (e) => {
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    };
+
+    const handleTouchEnd = (e) => {
+      if (isTransitioningRef.current) {
+        return;
+      }
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const touchEndTime = Date.now();
+      const deltaY = touchStartY - touchEndY;
+      const deltaTime = touchEndTime - touchStartTime;
+
+      // 최소 거리 50px, 최대 시간 300ms
+      if (Math.abs(deltaY) > 50 && deltaTime < 300) {
+        isTransitioningRef.current = true;
+
+        if (deltaY > 0) {
+          // 위로 스와이프 -> 다음 제품
+          handleNextProduct();
+        } else {
+          // 아래로 스와이프 -> 이전 제품
+          handlePrevProduct();
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
   }, [handleNextProduct, handlePrevProduct]);
 
   // 제품이 없으면 렌더링하지 않음

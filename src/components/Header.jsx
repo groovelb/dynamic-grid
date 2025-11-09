@@ -30,9 +30,10 @@ import {
  * <Header onFilterChange={handleFilter} currentFilter="male" currentColorFilter="white" isZoomedIn={false} isZoomEnabled={true} headerPadding="20px 40px" buttonSize={44} />
  */
 function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, currentFilter = 'all', currentColorFilter = 'all', isZoomedIn = false, isZoomEnabled = true, headerPadding = '20px 40px', buttonSize = 48 }) {
-  
+
   const IconSize = 32;
-  
+  const inactiveOpacity = 0.3;
+
   return (
     <Box
       component="header"
@@ -69,7 +70,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
         </IconButton>
       </Box>
 
-      <Box sx={ { display: isZoomedIn ? 'none' : 'flex', gap: '20px' } }>
+      <Box sx={ { display: isZoomedIn ? 'none' : 'flex', gap: '0px', alignItems: 'center' } }>
         {/* 성별 필터 */}
         <Box sx={ { display: 'flex', gap: '8px' } }>
           <IconButton
@@ -80,7 +81,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentFilter === 'all' ? 1 : 0.7,
+              opacity: currentFilter === 'all' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
@@ -97,7 +98,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentFilter === 'male' ? 1 : 0.7,
+              opacity: currentFilter === 'male' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
@@ -114,7 +115,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentFilter === 'female' ? 1 : 0.7,
+              opacity: currentFilter === 'female' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
@@ -124,6 +125,16 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
             <Dress size={IconSize} weight="light" />
           </IconButton>
         </Box>
+
+        {/* 구분선 */}
+        <Box sx={ {
+          width: '1px',
+          height: `${IconSize}px`,
+          backgroundColor: '#000000',
+          opacity: inactiveOpacity,
+          margin: '0 8px',
+          alignSelf: 'center'
+        } } />
 
         {/* 색상 필터 */}
         <Box sx={ { display: 'flex', gap: '8px' } }>
@@ -136,7 +147,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               fontSize: '12px',
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentColorFilter === 'all' ? 1 : 0.7,
+              opacity: currentColorFilter === 'all' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
@@ -153,7 +164,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentColorFilter === 'white' ? 1 : 0.7,
+              opacity: currentColorFilter === 'white' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
@@ -170,7 +181,7 @@ function Header({ onNavigate, onFilterChange, onColorFilterChange, onCartClick, 
               borderRadius: 0,
               backgroundColor: '#ffffff',
               color: '#000000',
-              opacity: currentColorFilter === 'black' ? 1 : 0.7,
+              opacity: currentColorFilter === 'black' ? 1 : inactiveOpacity,
               '&:hover': {
                 opacity: 1,
                 backgroundColor: '#ffffff',
