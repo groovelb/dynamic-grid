@@ -6,9 +6,12 @@ import GridContainer from './components/GridContainer';
 import DebugCenterLines from './components/DebugCenterLines';
 import ProductDetailView from './components/ProductDetailView';
 import products from './data/products';
+import { useResponsive } from './hooks/useResponsive';
+import { getColumnsForZoom } from './constants/responsive';
 
 function App() {
   const [currentFilter, setCurrentFilter] = useState('all');
+  const [currentColorFilter, setCurrentColorFilter] = useState('all');
   const [zoomLevel, setZoomLevel] = useState(0);
 
   // === Item Zoom 상태 ===
@@ -22,25 +25,23 @@ function App() {
   // === Wrapper ref (transform 계산용) ===
   const wrapperRef = useRef(null);
 
-  /** 확대 레벨에 따른 컬럼 수 계산 */
-  const getColumns = () => {
-    switch (zoomLevel) {
-      case 0:
-        return 8;
-      case 1:
-        return 6;
-      case 2:
-        return 4;
-      default:
-        return 8;
-    }
-  };
+  // === 반응형 설정 ===
+  const { width, breakpoint, config } = useResponsive();
+  const columns = getColumnsForZoom(breakpoint, zoomLevel);
+  const isZoomEnabled = config.enableZoom;
 
   const handleFilterChange = (filter) => {
     setCurrentFilter(filter);
   };
 
+  const handleColorFilterChange = (color) => {
+    setCurrentColorFilter(color);
+  };
+
   const handleNavigate = () => {
+    // Mobile 등에서 Zoom이 비활성화된 경우 무시
+    if (!isZoomEnabled && !isItemZoomed) return;
+
     // 우선순위 1: Item Zoom 해제
     if (isItemZoomed) {
       setSelectedProductId(null);
@@ -71,9 +72,14 @@ function App() {
     setIsItemZoomed(isZoomed);
   };
 
-  const filteredProducts = currentFilter === 'all'
-    ? products
-    : products.filter((product) => product.category === currentFilter);
+  const filteredProducts = products
+    .filter((product) => {
+      // 성별 필터
+      const categoryMatch = currentFilter === 'all' || product.category === currentFilter;
+      // 색상 필터
+      const colorMatch = currentColorFilter === 'all' || product.color === currentColorFilter;
+      return categoryMatch && colorMatch;
+    });
 
   // === 필터 변경 시 선택된 아이템이 사라지면 자동 줌아웃 ===
   useEffect(() => {
@@ -91,15 +97,20 @@ function App() {
           height: '100vh',
           display: 'flex',
           flexDirection: 'column',
-          padding: '40px',
+          padding: config.containerPadding,
         } }
       >
         <Header
           onNavigate={ handleNavigate }
           onFilterChange={ handleFilterChange }
+          onColorFilterChange={ handleColorFilterChange }
           onCartClick={ handleCartClick }
           currentFilter={ currentFilter }
+          currentColorFilter={ currentColorFilter }
           isZoomedIn={ isItemZoomed || zoomLevel === 2 }
+          isZoomEnabled={ isZoomEnabled }
+          headerPadding={ config.headerPadding }
+          buttonSize={ config.headerButtonSize }
           onToggleGrid={ () => setShowGrid(prev => !prev) }
           onToggleDebug={ () => setShowDebug(prev => !prev) }
           showGrid={ showGrid }
@@ -117,7 +128,8 @@ function App() {
       >
         <GridContainer
           selectedProductId={ selectedProductId }
-          columns={ getColumns() }
+          columns={ columns }
+          gap={ config.gap }
           wrapperRef={ wrapperRef }
           filteredProducts={ filteredProducts }
           onZoomChange={ handleZoomChange }
@@ -127,7 +139,8 @@ function App() {
           <DynamicGrid
             products={ filteredProducts }
             onProductClick={ handleProductClick }
-            columns={ getColumns() }
+            columns={ columns }
+            gap={ config.gap }
             selectedProductId={ selectedProductId }
             isItemZoomed={ isItemZoomed }
             showDebug={ showDebug }
@@ -143,6 +156,7 @@ function App() {
         filteredProducts={ filteredProducts }
         onProductChange={ (newId) => setSelectedProductId(newId) }
         onClose={ () => setSelectedProductId(null) }
+        config={ config }
       />
     )}
     </>

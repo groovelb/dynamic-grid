@@ -75,3 +75,9 @@ export const REDUCED_MOTION = {
 export const MEDIA_FILTERS = {
   BRIGHTNESS: 'brightness(1.02)',
 };
+
+// === Video Jog Settings ===
+export const VIDEO_JOG = {
+  FPS: 30, // 초당 프레임 업데이트 횟수 (30fps)
+  PLAYBACK_SPEED: 1.0, // 재생 속도 배수 (1.0 = 원본 속도, 1.5 = 1.5배속)
+};

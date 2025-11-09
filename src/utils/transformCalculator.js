@@ -19,9 +19,10 @@ import { calculateGridLayout, calculateItemPosition } from './gridLayout';
  * @param {RefObject} containerRef - GridContainer의 ref
  * @param {RefObject} wrapperRef - Wrapper(main)의 ref
  * @param {Array} filteredProducts - 현재 필터링된 제품 배열
+ * @param {number} gap - 그리드 간격 (px, 기본값: 48)
  * @returns {Object} { x, y, scale, transformOrigin }
  */
-export function calculateTransform(itemId, columns, containerRef, wrapperRef, filteredProducts) {
+export function calculateTransform(itemId, columns, containerRef, wrapperRef, filteredProducts, gap = 48) {
   // === 0. 유효성 검사 ===
   if (!itemId || !containerRef?.current || !wrapperRef?.current || !filteredProducts) {
     return getInitialTransform();
@@ -32,7 +33,7 @@ export function calculateTransform(itemId, columns, containerRef, wrapperRef, fi
   const wrapperRect = wrapperRef.current.getBoundingClientRect();
 
   // === 2. 그리드 레이아웃 계산 (순수 함수) ===
-  const layout = calculateGridLayout(columns, containerRect.width, 0);
+  const layout = calculateGridLayout(columns, containerRect.width, gap);
 
   // === 3. 필터링된 배열에서 실제 인덱스 찾기 ===
   const actualIndex = filteredProducts.findIndex(p => p.id === itemId);

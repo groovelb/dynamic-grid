@@ -21,6 +21,7 @@ const isVideo = (src) => {
  * @param {array} filteredProducts - 필터링된 전체 제품 배열
  * @param {function} onProductChange - 제품 변경 콜백
  * @param {function} onClose - 닫기 콜백
+ * @param {object} config - 반응형 설정 객체 [Optional]
  *
  * Example:
  * <ProductDetailView
@@ -28,9 +29,17 @@ const isVideo = (src) => {
  *   filteredProducts={filteredProducts}
  *   onProductChange={(newId) => setSelectedProductId(newId)}
  *   onClose={() => setSelectedProductId(null)}
+ *   config={config}
  * />
  */
-function ProductDetailView({ productId, filteredProducts, onProductChange, onClose }) {
+function ProductDetailView({ productId, filteredProducts, onProductChange, onClose, config }) {
+  // === 반응형 설정 (기본값: Full HD) ===
+  const detailViewWidth = config?.detailViewWidth || '70vw';
+  const detailViewHeight = config?.detailViewHeight || '70vh';
+  const detailArrowSize = config?.detailArrowSize || 40;
+  const detailArrowPosition = config?.detailArrowPosition || 20;
+  const detailIndicatorSize = config?.detailIndicatorSize || 8;
+
   // === 2D Carousel Matrix 상태 관리 ===
 
   // 세로축: 제품 인덱스 (현재 보고 있는 제품의 위치)
@@ -95,15 +104,16 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
   // 비디오 재생 제어 - currentImageIndex 변경 시
   useEffect(() => {
     if (isCurrentMediaVideo && videoRef.current && currentProduct) {
-      const videoKey = `${currentProduct.id}-${currentImageIndex}`;
-      const hasPlayed = playedVideosRef.current.has(videoKey);
+      const video = videoRef.current;
 
-      if (!hasPlayed) {
-        // 아직 재생하지 않은 비디오만 재생
-        videoRef.current.play().catch(err => {
-          console.log('Video autoplay prevented:', err);
-        });
-      }
+      // 재생 속도 설정
+      video.playbackRate = 1.3;
+
+      // 캐로셀 이동 시 항상 처음부터 재생
+      video.currentTime = 0;
+      video.play().catch(err => {
+        console.log('Video autoplay prevented:', err);
+      });
     }
   }, [currentImageIndex, currentProduct?.id, isCurrentMediaVideo, currentProduct]);
 
@@ -112,6 +122,12 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     if (!currentProduct) return;
     setImageDirection(1);
     setLastNavigationType('horizontal');
+
+    // 가로 네비게이션 시 초기 마운트 플래그 해제 (이후 비디오 재생 허용)
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      console.log('✅ First navigation detected, videos will now play');
+    }
 
     const currentIdx = imageIndexMap[currentProduct.id] || 0;
     const nextIdx = (currentIdx + 1) % currentProduct.images.length;
@@ -126,6 +142,12 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
     if (!currentProduct) return;
     setImageDirection(-1);
     setLastNavigationType('horizontal');
+
+    // 가로 네비게이션 시 초기 마운트 플래그 해제 (이후 비디오 재생 허용)
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      console.log('✅ First navigation detected, videos will now play');
+    }
 
     const currentIdx = imageIndexMap[currentProduct.id] || 0;
     const prevIdx = (currentIdx - 1 + currentProduct.images.length) % currentProduct.images.length;
@@ -331,29 +353,29 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
           justifyContent: 'center',
         }}
       >
-        {/* 이미지 컨테이너 (70vw x 70vh) */}
+        {/* 이미지 컨테이너 (반응형 크기) */}
         <Box
           sx={{
             position: 'relative',
-            width: '70vw',
-            height: '70vh',
+            width: detailViewWidth,
+            height: detailViewHeight,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
           }}
         >
-          {/* 좌측 화살표 버튼 - 고정 */}
+          {/* 좌측 화살표 버튼 - 반응형 */}
           <IconButton
             onClick={handlePrevImage}
             sx={{
               position: 'absolute',
-              left: 20,
+              left: detailArrowPosition,
               zIndex: 10,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               color: '#000',
-              width: 40,
-              height: 40,
+              width: detailArrowSize,
+              height: detailArrowSize,
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 1)',
               },
@@ -400,11 +422,11 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
                 }}
                 onAnimationComplete={() => {
                   console.log('🎬 Video Animation COMPLETE:', currentProduct.id, currentImageIndex);
-                  const videoKey = `${currentProduct.id}-${currentImageIndex}`;
-                  const hasPlayed = playedVideosRef.current.has(videoKey);
 
-                  // 애니메이션 완료 후 비디오 재생 (한 번도 재생하지 않은 경우만)
-                  if (videoRef.current && !hasPlayed) {
+                  // 비디오 재생
+                  if (videoRef.current) {
+                    videoRef.current.playbackRate = 1.3;
+                    videoRef.current.currentTime = 0;
                     videoRef.current.play().catch(err => {
                       console.log('Video autoplay prevented:', err);
                     });
@@ -412,6 +434,7 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
 
                   // 최초 마운트 플래그 해제
                   if (isInitialMount.current) {
+                    console.log('✅ Initial mount complete');
                     isInitialMount.current = false;
                   }
                 }}
@@ -467,17 +490,17 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
             )}
           </AnimatePresence>
 
-          {/* 우측 화살표 버튼 - 고정 */}
+          {/* 우측 화살표 버튼 - 반응형 */}
           <IconButton
             onClick={handleNextImage}
             sx={{
               position: 'absolute',
-              right: 20,
+              right: detailArrowPosition,
               zIndex: 10,
               backgroundColor: 'rgba(255, 255, 255, 0.8)',
               color: '#000',
-              width: 40,
-              height: 40,
+              width: detailArrowSize,
+              height: detailArrowSize,
               '&:hover': {
                 backgroundColor: 'rgba(255, 255, 255, 1)',
               },
@@ -489,7 +512,7 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
           </IconButton>
         </Box>
 
-        {/* 인디케이터 - 고정 */}
+        {/* 인디케이터 - 반응형 */}
         <Box
           sx={{
             display: 'flex',
@@ -501,8 +524,8 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
             <Box
               key={index}
               sx={{
-                width: 8,
-                height: 8,
+                width: detailIndicatorSize,
+                height: detailIndicatorSize,
                 borderRadius: '50%',
                 backgroundColor: '#000',
                 opacity: index === currentImageIndex ? 1 : 0.3,

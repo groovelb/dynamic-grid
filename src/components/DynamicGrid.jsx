@@ -9,21 +9,22 @@ import ProductCard from './ProductCard';
  * @param {array} products - 제품 데이터 배열 [Required]
  * @param {function} onProductClick - 제품 클릭 핸들러 [Optional]
  * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 8]
+ * @param {number} gap - 그리드 간격 (px) [Optional, 기본값: 48]
  * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
  * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional]
  * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional]
  *
  * Example usage:
- * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} showDebug={true} />
+ * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} gap={48} showDebug={true} />
  */
-function DynamicGrid({ products, onProductClick, columns = 8, selectedProductId = null, isItemZoomed = false, showDebug = false }) {
+function DynamicGrid({ products, onProductClick, columns = 8, gap = 48, selectedProductId = null, isItemZoomed = false, showDebug = false }) {
   return (
     <LayoutGroup>
       <Box
         sx={ {
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: '16px',
+          gap: `${gap}px`,
           width: '100%',
         } }
       >

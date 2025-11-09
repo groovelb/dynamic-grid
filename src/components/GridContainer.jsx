@@ -15,6 +15,7 @@ import DebugPanel from './DebugPanel';
  * @param {ReactNode} children - DynamicGrid 컴포넌트 [Required]
  * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
  * @param {number} columns - 그리드 컬럼 수 [Required]
+ * @param {number} gap - 그리드 간격 (px) [Optional, 기본값: 48]
  * @param {RefObject} wrapperRef - Wrapper(main) ref [Required]
  * @param {Array} filteredProducts - 현재 필터링된 제품 배열 [Required]
  * @param {function} onZoomChange - 줌 상태 변경 콜백 [Optional]
@@ -24,6 +25,7 @@ import DebugPanel from './DebugPanel';
  * <GridContainer
  *   selectedProductId="1"
  *   columns={8}
+ *   gap={48}
  *   wrapperRef={wrapperRef}
  *   filteredProducts={products}
  *   onZoomChange={handleZoomChange}
@@ -32,7 +34,7 @@ import DebugPanel from './DebugPanel';
  *   <DynamicGrid ... />
  * </GridContainer>
  */
-function GridContainer({ children, selectedProductId, columns, wrapperRef, filteredProducts, onZoomChange, showDebug = false }) {
+function GridContainer({ children, selectedProductId, columns, gap = 48, wrapperRef, filteredProducts, onZoomChange, showDebug = false }) {
   const containerRef = useRef(null);
   const [transform, setTransform] = useState(getInitialTransform());
   const prevTransformRef = useRef(getInitialTransform()); // 이전 transform 저장
@@ -45,7 +47,8 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, filte
         columns,
         containerRef,
         wrapperRef,
-        filteredProducts
+        filteredProducts,
+        gap
       );
       setTransform(calculated);
       prevTransformRef.current = calculated; // 저장
@@ -67,7 +70,7 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, filte
         }
       }, 200); // transition duration과 동일
     }
-  }, [selectedProductId, columns, wrapperRef, filteredProducts, onZoomChange]);
+  }, [selectedProductId, columns, gap, wrapperRef, filteredProducts, onZoomChange]);
 
   // === Window resize 시 transform 재계산 ===
   useEffect(() => {
@@ -83,7 +86,8 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, filte
           columns,
           containerRef,
           wrapperRef,
-          filteredProducts
+          filteredProducts,
+          gap
         );
         setTransform(recalculated);
       }, 100);
@@ -94,7 +98,7 @@ function GridContainer({ children, selectedProductId, columns, wrapperRef, filte
       window.removeEventListener('resize', handleResize);
       clearTimeout(timeoutId);
     };
-  }, [selectedProductId, columns, wrapperRef, filteredProducts]);
+  }, [selectedProductId, columns, gap, wrapperRef, filteredProducts]);
 
   return (
     <>
