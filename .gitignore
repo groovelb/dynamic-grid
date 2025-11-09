@@ -28,3 +28,6 @@ dist-ssr
 /.cursor/rules/ruler-generated.mdc
 /.cursor/rules/ruler-generated.mdc.bak
 # END Ruler Generated Files
+
+*storybook.log
+storybook-static

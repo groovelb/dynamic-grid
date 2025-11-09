@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "rules:init": "ruler init",
     "rules:apply": "ruler apply",
-    "rules:apply:cursor": "ruler apply --agents=cursor"
+    "rules:apply:cursor": "ruler apply --agents=cursor",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -24,16 +26,29 @@
     "react-icons": "^5.5.0"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^4.1.2",
     "@eslint/js": "^9.36.0",
     "@intellectronica/ruler": "^0.3.11",
+    "@storybook/addon-a11y": "^10.0.6",
+    "@storybook/addon-docs": "^10.0.6",
+    "@storybook/addon-onboarding": "^10.0.6",
+    "@storybook/addon-vitest": "^10.0.6",
+    "@storybook/react-vite": "^10.0.6",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
+    "eslint-plugin-storybook": "^10.0.6",
     "globals": "^16.4.0",
-    "vite": "^7.1.7"
+    "prop-types": "^15.8.1",
+    "storybook": "^10.0.6",
+    "vite": "^7.1.7",
+    "vitest": "^4.0.8",
+    "playwright": "^1.56.1",
+    "@vitest/browser-playwright": "^4.0.8",
+    "@vitest/coverage-v8": "^4.0.8"
   },
   "packageManager": "pnpm@9.1.0+sha1.217063ce3fcbf44f3051666f38b810f1ddefee4a"
 }
