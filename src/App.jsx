@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Header from './components/Header';
 import DynamicGrid from './components/DynamicGrid';
+import ProductCard from './components/ProductCard';
 import GridContainer from './components/GridContainer';
 import DebugCenterLines from './components/DebugCenterLines';
 import ProductDetailView from './components/ProductDetailView';
@@ -137,15 +138,18 @@ function App() {
           showGrid={ showGrid }
           showDebug={ showDebug }
         >
-          <DynamicGrid
-            products={ filteredProducts }
-            onProductClick={ handleProductClick }
-            columns={ columns }
-            gap={ config.gap }
-            selectedProductId={ selectedProductId }
-            isItemZoomed={ isItemZoomed }
-            showDebug={ showDebug }
-          />
+          <DynamicGrid columns={ columns } gap={ config.gap }>
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={ product.id }
+                product={ product }
+                onClick={ handleProductClick }
+                isItemZoomed={ isItemZoomed }
+                isSelected={ selectedProductId === product.id }
+                showDebug={ showDebug }
+              />
+            ))}
+          </DynamicGrid>
         </GridContainer>
       </Box>
     </Box>

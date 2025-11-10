@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import DynamicGrid from '../DynamicGrid';
+import ProductCard from '../ProductCard';
 
 export default {
   title: '2. Components/Grid/DynamicGrid',
@@ -21,30 +23,19 @@ export default {
 
 | Prop | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| **products** | array | - | 제품 데이터 배열 (id, name, images 등) |
-| **onProductClick** | function | - | 제품 클릭 시 호출되는 함수 |
+| **children** | ReactNode | - | 그리드에 배치할 아이템들 (ProductCard 등) |
 | **columns** | number | 8 | 그리드 컬럼 수 |
 | **gap** | number | 48 | 그리드 간격 (px) |
-| **selectedProductId** | string\|null | null | 선택된 제품 ID (layout animation 활성화) |
-| **isItemZoomed** | boolean | false | true면 모든 카드가 페이드아웃됩니다 |
-| **showDebug** | boolean | false | true면 디버그 정보를 표시합니다 |
         `,
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
-    products: {
-      description: '제품 데이터 배열',
+    children: {
+      description: '그리드에 배치할 아이템들',
       table: {
-        type: { summary: 'array' },
-      },
-    },
-    onProductClick: {
-      description: '제품 클릭 핸들러',
-      table: {
-        type: { summary: 'function' },
-        defaultValue: { summary: 'undefined' },
+        type: { summary: 'ReactNode' },
       },
     },
     columns: {
@@ -63,38 +54,36 @@ export default {
         defaultValue: { summary: '48' },
       },
     },
-    selectedProductId: {
-      description: '선택된 제품 ID',
-      table: {
-        type: { summary: 'string | null' },
-        defaultValue: { summary: 'null' },
-      },
-    },
-    isItemZoomed: {
-      description: 'Item Zoom 상태',
-      control: { type: 'boolean' },
-      table: {
-        type: { summary: 'boolean' },
-        defaultValue: { summary: 'false' },
-      },
-    },
-    showDebug: {
-      description: '디버그 모드',
-      control: { type: 'boolean' },
-      table: {
-        type: { summary: 'boolean' },
-        defaultValue: { summary: 'false' },
-      },
-    },
   },
 };
+
+// 정육면체 컴포넌트 (Framer Motion 적용)
+const CubeItem = ({ number }) => (
+  <motion.div
+    layout
+    transition={{ duration: 0.3, ease: 'easeInOut' }}
+    style={{
+      aspectRatio: '1 / 1',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f5f5f5',
+      border: '1px solid #e0e0e0',
+      fontSize: '24px',
+      fontWeight: '500',
+      color: '#666',
+      fontFamily: 'system-ui',
+    }}
+  >
+    {number}
+  </motion.div>
+);
 
 // 정육면체 그리드 아이템 생성
 const createCubeItems = (count = 24) => {
   return Array.from({ length: count }, (_, i) => ({
     id: `cube-${i + 1}`,
-    name: `${i + 1}`,
-    images: ['', ''], // 빈 이미지 (placeholder 모드)
+    number: i + 1,
   }));
 };
 
@@ -187,11 +176,11 @@ export const Default = {
         </div>
 
         {/* 그리드 */}
-        <DynamicGrid
-          products={items}
-          columns={6}
-          gap={20}
-        />
+        <DynamicGrid columns={6} gap={20}>
+          {items.map(item => (
+            <CubeItem key={item.id} number={item.number} />
+          ))}
+        </DynamicGrid>
 
         {/* 안내 */}
         <div style={{
@@ -252,15 +241,18 @@ export const WithProducts = {
         </div>
 
         {/* 그리드 */}
-        <DynamicGrid
-          products={products}
-          onProductClick={(id) => {
-            console.log('Clicked product:', id);
-            setClickedId(id);
-          }}
-          columns={3}
-          gap={24}
-        />
+        <DynamicGrid columns={3} gap={24}>
+          {products.map(product => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={(id) => {
+                console.log('Clicked product:', id);
+                setClickedId(id);
+              }}
+            />
+          ))}
+        </DynamicGrid>
 
         {/* 클릭 피드백 */}
         {clickedId && (

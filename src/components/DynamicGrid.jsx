@@ -1,23 +1,22 @@
 import { LayoutGroup, AnimatePresence } from 'framer-motion';
 import Box from '@mui/material/Box';
-import ProductCard from './ProductCard';
 
 /**
  * DynamicGrid 컴포넌트
  *
  * Props:
- * @param {array} products - 제품 데이터 배열 [Required]
- * @param {function} onProductClick - 제품 클릭 핸들러 [Optional]
+ * @param {ReactNode} children - 그리드 아이템들 [Required]
  * @param {number} columns - 그리드 컬럼 수 [Optional, 기본값: 8]
  * @param {number} gap - 그리드 간격 (px) [Optional, 기본값: 48]
- * @param {string|null} selectedProductId - 선택된 제품 ID [Optional]
- * @param {boolean} isItemZoomed - Item Zoom 상태 [Optional]
- * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional]
  *
  * Example usage:
- * <DynamicGrid products={productList} onProductClick={handleClick} columns={8} gap={48} showDebug={true} />
+ * <DynamicGrid columns={8} gap={48}>
+ *   {products.map(product => (
+ *     <ProductCard key={product.id} product={product} />
+ *   ))}
+ * </DynamicGrid>
  */
-function DynamicGrid({ products, onProductClick, columns = 8, gap = 48, selectedProductId = null, isItemZoomed = false, showDebug = false }) {
+function DynamicGrid({ children, columns = 8, gap = 48 }) {
   return (
     <LayoutGroup>
       <Box
@@ -29,16 +28,7 @@ function DynamicGrid({ products, onProductClick, columns = 8, gap = 48, selected
         } }
       >
         <AnimatePresence mode="popLayout">
-          {products.map((product) => (
-            <ProductCard
-              key={ product.id }
-              product={ product }
-              onClick={ onProductClick }
-              isItemZoomed={ isItemZoomed }
-              isSelected={ selectedProductId === product.id }
-              showDebug={ showDebug }
-            />
-          ))}
+          {children}
         </AnimatePresence>
       </Box>
     </LayoutGroup>

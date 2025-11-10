@@ -116,7 +116,7 @@ function Matrix2DCarousel({
 
   // === 세로축 네비게이션 (아이템 변경) ===
   const handleNextItem = useCallback(() => {
-    if (isTransitioning || itemIndex >= items.length - 1) {
+    if (isTransitioningRef.current || itemIndex >= items.length - 1) {
       return;
     }
 
@@ -130,10 +130,10 @@ function Matrix2DCarousel({
       setIsTransitioning(false);
       isTransitioningRef.current = false;
     }, 300);
-  }, [isTransitioning, itemIndex, items.length]);
+  }, [itemIndex, items.length]);
 
   const handlePrevItem = useCallback(() => {
-    if (isTransitioning || itemIndex <= 0) {
+    if (isTransitioningRef.current || itemIndex <= 0) {
       return;
     }
 
@@ -147,7 +147,7 @@ function Matrix2DCarousel({
       setIsTransitioning(false);
       isTransitioningRef.current = false;
     }, 300);
-  }, [isTransitioning, itemIndex]);
+  }, [itemIndex]);
 
   // === 키보드 이벤트 핸들러 ===
   useEffect(() => {
@@ -184,11 +184,11 @@ function Matrix2DCarousel({
       }
 
       if (Math.abs(e.deltaY) >= MIN_DISTANCE) {
-        isTransitioningRef.current = true;
-
         if (e.deltaY > 0) {
+          // 다음 아이템으로 (아래로 스크롤)
           handleNextItem();
         } else {
+          // 이전 아이템으로 (위로 스크롤)
           handlePrevItem();
         }
       }
@@ -219,8 +219,6 @@ function Matrix2DCarousel({
       const deltaTime = touchEndTime - touchStartTime;
 
       if (Math.abs(deltaY) > 50 && deltaTime < 300) {
-        isTransitioningRef.current = true;
-
         if (deltaY > 0) {
           handleNextItem();
         } else {
