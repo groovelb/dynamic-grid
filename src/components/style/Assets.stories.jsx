@@ -1,3 +1,22 @@
+import motion1 from '../../assets/product/1-motion.mp4';
+import img1_1 from '../../assets/product/1-1.png';
+import img1_2 from '../../assets/product/1-2.png';
+import motion2 from '../../assets/product/2-motion.mp4';
+import img2_1 from '../../assets/product/2-1.png';
+import img2_2 from '../../assets/product/2-2.png';
+import motion3 from '../../assets/product/3-motion.mp4';
+import img3_1 from '../../assets/product/3-1.png';
+import img3_2 from '../../assets/product/3-2.png';
+import motion4 from '../../assets/product/4-motion.mp4';
+import img4_1 from '../../assets/product/4-1.png';
+import img4_2 from '../../assets/product/4-2.png';
+import motion5 from '../../assets/product/5-motion.mp4';
+import img5_1 from '../../assets/product/5-1.png';
+import img5_2 from '../../assets/product/5-2.png';
+import motion6 from '../../assets/product/6-motion.mp4';
+import img6_1 from '../../assets/product/6-1.png';
+import img6_2 from '../../assets/product/6-2.png';
+
 export default {
   title: '1. Style/Assets',
   parameters: {
@@ -120,39 +139,39 @@ export const AllAssets = {
       </h3>
 
       <ProductRow label="제품 1">
-        <AssetCard src="/src/assets/product/1-1.png" label="1-1.png" />
-        <AssetCard src="/src/assets/product/1-2.png" label="1-2.png" />
-        <AssetCard src="/src/assets/product/1-motion.mp4" label="1-motion.mp4" type="video" />
+        <AssetCard src={img1_1} label="1-1.png" />
+        <AssetCard src={img1_2} label="1-2.png" />
+        <AssetCard src={motion1} label="1-motion.mp4" type="video" />
       </ProductRow>
 
       <ProductRow label="제품 2">
-        <AssetCard src="/src/assets/product/2-1.png" label="2-1.png" />
-        <AssetCard src="/src/assets/product/2-2.png" label="2-2.png" />
-        <AssetCard src="/src/assets/product/2-motion.mp4" label="2-motion.mp4" type="video" />
+        <AssetCard src={img2_1} label="2-1.png" />
+        <AssetCard src={img2_2} label="2-2.png" />
+        <AssetCard src={motion2} label="2-motion.mp4" type="video" />
       </ProductRow>
 
       <ProductRow label="제품 3">
-        <AssetCard src="/src/assets/product/3-1.png" label="3-1.png" />
-        <AssetCard src="/src/assets/product/3-2.png" label="3-2.png" />
-        <AssetCard src="/src/assets/product/3-motion.mp4" label="3-motion.mp4" type="video" />
+        <AssetCard src={img3_1} label="3-1.png" />
+        <AssetCard src={img3_2} label="3-2.png" />
+        <AssetCard src={motion3} label="3-motion.mp4" type="video" />
       </ProductRow>
 
       <ProductRow label="제품 4">
-        <AssetCard src="/src/assets/product/4-1.png" label="4-1.png" />
-        <AssetCard src="/src/assets/product/4-2.png" label="4-2.png" />
-        <AssetCard src="/src/assets/product/4-motion.mp4" label="4-motion.mp4" type="video" />
+        <AssetCard src={img4_1} label="4-1.png" />
+        <AssetCard src={img4_2} label="4-2.png" />
+        <AssetCard src={motion4} label="4-motion.mp4" type="video" />
       </ProductRow>
 
       <ProductRow label="제품 5">
-        <AssetCard src="/src/assets/product/5-1.png" label="5-1.png" />
-        <AssetCard src="/src/assets/product/5-2.png" label="5-2.png" />
-        <AssetCard src="/src/assets/product/5-motion.mp4" label="5-motion.mp4" type="video" />
+        <AssetCard src={img5_1} label="5-1.png" />
+        <AssetCard src={img5_2} label="5-2.png" />
+        <AssetCard src={motion5} label="5-motion.mp4" type="video" />
       </ProductRow>
 
       <ProductRow label="제품 6">
-        <AssetCard src="/src/assets/product/6-1.png" label="6-1.png" />
-        <AssetCard src="/src/assets/product/6-2.png" label="6-2.png" />
-        <AssetCard src="/src/assets/product/6-motion.mp4" label="6-motion.mp4" type="video" />
+        <AssetCard src={img6_1} label="6-1.png" />
+        <AssetCard src={img6_2} label="6-2.png" />
+        <AssetCard src={motion6} label="6-motion.mp4" type="video" />
       </ProductRow>
     </div>
   ),

@@ -54,11 +54,11 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
         sx={{
           width: '100%',
           height: '100%',
-          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 4,
         }}
       >
         {/* 2D Matrix Carousel */}
@@ -73,16 +73,11 @@ function ProductDetailView({ productId, filteredProducts, onProductChange, onClo
         {/* 제품명 */}
         <Box
           sx={{
-            position: 'absolute',
-            bottom: 40,
-            left: '50%',
-            transform: 'translateX(-50%)',
             padding: '12px 24px',
-            fontSize: '16px',
+            fontSize: { xs: '16px', md: '18px' },
             fontWeight: 400,
             color: '#000',
             textAlign: 'center',
-            pointerEvents: 'none',
             whiteSpace: 'nowrap',
           }}
         >

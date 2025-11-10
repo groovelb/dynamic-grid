@@ -1,5 +1,5 @@
 import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 
 /**
  * ArrowButton 컴포넌트
@@ -27,13 +27,13 @@ function ArrowButton({
   zIndex = 10,
   sx = {},
 }) {
-  // 방향별 화살표 심볼
-  const arrows = {
-    left: '‹',
-    right: '›',
-    up: '︿',
-    down: '﹀',
-  };
+  // 방향별 화살표 아이콘
+  const ArrowIcon = {
+    left: ChevronLeft,
+    right: ChevronRight,
+    up: ChevronUp,
+    down: ChevronDown,
+  }[direction];
 
   // 기본 위치 설정 (direction에 따라 자동)
   const defaultPositionSide = direction === 'left' ? 'left'
@@ -43,6 +43,9 @@ function ArrowButton({
 
   const finalPositionSide = positionSide || defaultPositionSide;
 
+  // 아이콘 크기는 버튼 크기의 60%
+  const iconSize = size * 0.6;
+
   return (
     <IconButton
       onClick={onClick}
@@ -50,19 +53,17 @@ function ArrowButton({
         position: 'absolute',
         [finalPositionSide]: position,
         zIndex,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        // backgroundColor: 'rgba(255, 255, 255, 0.8)',
         color: '#000',
         width: size,
         height: size,
         '&:hover': {
-          backgroundColor: 'rgba(255, 255, 255, 1)',
+          // backgroundColor: 'rgba(255, 255, 255, 1)',
         },
         ...sx,
       }}
     >
-      <Box component="span" sx={{ fontSize: 24, fontWeight: 300 }}>
-        {arrows[direction]}
-      </Box>
+      <ArrowIcon size={iconSize} strokeWidth={1} />
     </IconButton>
   );
 }

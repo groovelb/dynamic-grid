@@ -79,8 +79,8 @@ function MediaRenderer({
   }, [src, isVideoFile, autoPlay, playbackRate]);
 
   const defaultStyle = {
-    maxWidth: '100%',
-    maxHeight: '100%',
+    width: '100%',
+    height: '100%',
     objectFit: 'contain',
     position: 'absolute',
     filter: MEDIA_FILTERS.BRIGHTNESS,

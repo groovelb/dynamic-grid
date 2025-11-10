@@ -31,7 +31,6 @@ function Matrix2DCarousel({
   // === 반응형 설정 ===
   const viewWidth = config.viewWidth || '70vw';
   const arrowSize = config.arrowSize || 40;
-  const arrowPosition = config.arrowPosition || 20;
   const indicatorSize = config.indicatorSize || 8;
 
   // === 2D 매트릭스 상태 관리 ===
@@ -50,21 +49,22 @@ function Matrix2DCarousel({
   const [imageDirection, setImageDirection] = useState(0);
   const [lastNavigationType, setLastNavigationType] = useState('horizontal');
 
-  // 전환 중 플래그 (빠른 스크롤 방지) - ref만 사용
+  // Refs로 관리
   const isTransitioningRef = useRef(false);
-
-  // 비디오 재생 제어
   const videoRef = useRef(null);
   const isInitialMount = useRef(true);
-
-  // itemIndex를 ref로도 추적 (useCallback에서 최신 값 참조용)
   const itemIndexRef = useRef(itemIndex);
+  const timeoutRef = useRef(null);
+  const handleNextItemRef = useRef(null);
+  const handlePrevItemRef = useRef(null);
+
+  // itemIndex를 ref로도 추적
   useEffect(() => {
     console.log('[useEffect:itemIndexRef] Updating ref:', itemIndex);
     itemIndexRef.current = itemIndex;
   }, [itemIndex]);
 
-  // onItemChange를 ref로 관리 (dependency 이슈 방지)
+  // onItemChange를 ref로 관리
   const onItemChangeRef = useRef(onItemChange);
   useEffect(() => {
     onItemChangeRef.current = onItemChange;
@@ -94,7 +94,9 @@ function Matrix2DCarousel({
 
   // === 가로축 네비게이션 (이미지 변경) ===
   const handleNextImage = useCallback(() => {
-    if (!currentItem) return;
+    const item = items[itemIndexRef.current];
+    if (!item) return;
+
     setImageDirection(1);
     setLastNavigationType('horizontal');
 
@@ -102,17 +104,20 @@ function Matrix2DCarousel({
       isInitialMount.current = false;
     }
 
-    const currentIdx = imageIndexMap[currentItem.id] || 0;
-    const nextIdx = (currentIdx + 1) % currentItem.images.length;
-
-    setImageIndexMap(prev => ({
-      ...prev,
-      [currentItem.id]: nextIdx
-    }));
-  }, [currentItem, imageIndexMap]);
+    setImageIndexMap(prev => {
+      const currentIdx = prev[item.id] || 0;
+      const nextIdx = (currentIdx + 1) % item.images.length;
+      return {
+        ...prev,
+        [item.id]: nextIdx
+      };
+    });
+  }, [items]);
 
   const handlePrevImage = useCallback(() => {
-    if (!currentItem) return;
+    const item = items[itemIndexRef.current];
+    if (!item) return;
+
     setImageDirection(-1);
     setLastNavigationType('horizontal');
 
@@ -120,14 +125,15 @@ function Matrix2DCarousel({
       isInitialMount.current = false;
     }
 
-    const currentIdx = imageIndexMap[currentItem.id] || 0;
-    const prevIdx = (currentIdx - 1 + currentItem.images.length) % currentItem.images.length;
-
-    setImageIndexMap(prev => ({
-      ...prev,
-      [currentItem.id]: prevIdx
-    }));
-  }, [currentItem, imageIndexMap]);
+    setImageIndexMap(prev => {
+      const currentIdx = prev[item.id] || 0;
+      const prevIdx = (currentIdx - 1 + item.images.length) % item.images.length;
+      return {
+        ...prev,
+        [item.id]: prevIdx
+      };
+    });
+  }, [items]);
 
   // === 세로축 네비게이션 (아이템 변경) ===
   const handleNextItem = useCallback(() => {
@@ -148,7 +154,12 @@ function Matrix2DCarousel({
     isTransitioningRef.current = true;
     setItemIndex(prev => prev + 1);
 
-    setTimeout(() => {
+    // 이전 타임아웃 clear
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
       console.log('[handleNextItem] Transition complete');
       isTransitioningRef.current = false;
     }, 300);
@@ -172,10 +183,30 @@ function Matrix2DCarousel({
     isTransitioningRef.current = true;
     setItemIndex(prev => prev - 1);
 
-    setTimeout(() => {
+    // 이전 타임아웃 clear
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
       console.log('[handlePrevItem] Transition complete');
       isTransitioningRef.current = false;
     }, 300);
+  }, [items.length]);
+
+  // 핸들러 ref 업데이트 (이벤트 리스너에서 항상 최신 함수 사용)
+  useEffect(() => {
+    handleNextItemRef.current = handleNextItem;
+    handlePrevItemRef.current = handlePrevItem;
+  }, [handleNextItem, handlePrevItem]);
+
+  // === Cleanup: unmount 시 타임아웃 정리 ===
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   // === 키보드 이벤트 핸들러 ===
@@ -186,16 +217,20 @@ function Matrix2DCarousel({
         onClose?.();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        handleNextItem();
+        handleNextItemRef.current?.();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        handlePrevItem();
+        handlePrevItemRef.current?.();
       }
     };
 
+    console.log('[Matrix2DCarousel] Adding keyboard listener');
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, handleNextItem, handlePrevItem]);
+    return () => {
+      console.log('[Matrix2DCarousel] Removing keyboard listener');
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]); // ✅ dependency 최소화
 
   // === 휠 이벤트 핸들러 (데스크톱 전용) ===
   useEffect(() => {
@@ -211,8 +246,7 @@ function Matrix2DCarousel({
       console.log('[Matrix2DCarousel] Wheel event:', {
         deltaY: e.deltaY,
         isTransitioning: isTransitioningRef.current,
-        currentIndex: itemIndexRef.current,
-        itemsLength: items.length
+        currentIndex: itemIndexRef.current
       });
 
       if (isTransitioningRef.current) {
@@ -224,11 +258,11 @@ function Matrix2DCarousel({
         if (e.deltaY > 0) {
           // 다음 아이템으로 (아래로 스크롤)
           console.log('[Matrix2DCarousel] Calling handleNextItem');
-          handleNextItem();
+          handleNextItemRef.current?.();
         } else {
           // 이전 아이템으로 (위로 스크롤)
           console.log('[Matrix2DCarousel] Calling handlePrevItem');
-          handlePrevItem();
+          handlePrevItemRef.current?.();
         }
       }
     };
@@ -239,7 +273,7 @@ function Matrix2DCarousel({
       console.log('[Matrix2DCarousel] Removing wheel listener');
       window.removeEventListener('wheel', handleWheel);
     };
-  }, [handleNextItem, handlePrevItem, items.length]);
+  }, []); // ✅ dependency 제거 - ref만 사용
 
   // === 터치 스와이프 핸들러 (모바일 전용) ===
   useEffect(() => {
@@ -263,21 +297,23 @@ function Matrix2DCarousel({
 
       if (Math.abs(deltaY) > 50 && deltaTime < 300) {
         if (deltaY > 0) {
-          handleNextItem();
+          handleNextItemRef.current?.();
         } else {
-          handlePrevItem();
+          handlePrevItemRef.current?.();
         }
       }
     };
 
+    console.log('[Matrix2DCarousel] Adding touch listeners');
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
+      console.log('[Matrix2DCarousel] Removing touch listeners');
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [handleNextItem, handlePrevItem]);
+  }, []); // ✅ dependency 제거 - ref만 사용
 
   // 아이템이 없으면 렌더링하지 않음
   if (!currentItem) {
@@ -335,68 +371,140 @@ function Matrix2DCarousel({
   return (
     <Box
       sx={{
-        position: 'relative',
-        width: viewWidth,
-        mt: '-80px',
-        aspectRatio: '1/1',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
+        gap: 4,
+        mt: '0px',
       }}
     >
-      {/* 좌측 화살표 */}
-      <ArrowButton
-        onClick={handlePrevImage}
-        direction="left"
-        size={arrowSize}
-        position={arrowPosition}
-      />
-
-      {/* 중앙 미디어 영역 - 2D 슬라이드 애니메이션 */}
-      <AnimatePresence
-        initial={false}
-        custom={{
-          navType: lastNavigationType,
-          hDirection: imageDirection,
-          vDirection: verticalDirection
+      {/* 메인 영역: 화살표 + 미디어 */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: '48px', md: '24px' },
         }}
-        mode="wait"
       >
-        <MediaRenderer
-          key={`${currentItem.id}-${currentImageIndex}`}
-          src={currentMediaSrc}
-          alt={`${currentItem.name} - Image ${currentImageIndex + 1}`}
-          videoRef={videoRef}
-          variants={imageSlideVariants}
-          custom={{
-            navType: lastNavigationType,
-            hDirection: imageDirection,
-            vDirection: verticalDirection
-          }}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{
-            x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
-            y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
-            opacity: { duration: 0.3 },
-          }}
-          onAnimationComplete={() => {
-            if (isInitialMount.current) {
-              isInitialMount.current = false;
-            }
-          }}
+        {/* 좌측 화살표 */}
+        <ArrowButton
+          onClick={handlePrevImage}
+          direction="left"
+          size={arrowSize}
         />
-      </AnimatePresence>
 
-      {/* 우측 화살표 */}
-      <ArrowButton
-        onClick={handleNextImage}
-        direction="right"
-        size={arrowSize}
-        position={arrowPosition}
-      />
+        {/* 중앙 미디어 영역 - 2D 슬라이드 애니메이션 */}
+        <Box
+          sx={{
+            position: 'relative',
+            width: viewWidth,
+            aspectRatio: '1/1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
+        >
+          <AnimatePresence
+            initial={false}
+            custom={{
+              navType: lastNavigationType,
+              hDirection: imageDirection,
+              vDirection: verticalDirection
+            }}
+            mode="wait"
+          >
+            <MediaRenderer
+              key={`${currentItem.id}-${currentImageIndex}`}
+              src={currentMediaSrc}
+              alt={`${currentItem.name} - Image ${currentImageIndex + 1}`}
+              videoRef={videoRef}
+              variants={imageSlideVariants}
+              custom={{
+                navType: lastNavigationType,
+                hDirection: imageDirection,
+                vDirection: verticalDirection
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                y: { type: 'tween', duration: 0.3, ease: 'easeInOut' },
+                opacity: { duration: 0.3 },
+              }}
+              onAnimationComplete={() => {
+                if (isInitialMount.current) {
+                  isInitialMount.current = false;
+                }
+              }}
+            />
+          </AnimatePresence>
+
+          {/* 상단 그라데이션 오버레이 */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: { xs: '48px', md: '80px' },
+              background: 'linear-gradient(to bottom, #ffffff, transparent)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+
+          {/* 하단 그라데이션 오버레이 */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: { xs: '48px', md: '80px' },
+              background: 'linear-gradient(to top, #ffffff, transparent)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+
+          {/* 좌측 그라데이션 오버레이 */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: { xs: '48px', md: '80px' },
+              background: 'linear-gradient(to right, #ffffff, transparent)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+
+          {/* 우측 그라데이션 오버레이 */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              right: 0,
+              width: { xs: '48px', md: '80px' },
+              background: 'linear-gradient(to left, #ffffff, transparent)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+        </Box>
+
+        {/* 우측 화살표 */}
+        <ArrowButton
+          onClick={handleNextImage}
+          direction="right"
+          size={arrowSize}
+        />
+      </Box>
 
       {/* 인디케이터 */}
       <Indicator
@@ -404,12 +512,6 @@ function Matrix2DCarousel({
         current={currentImageIndex}
         onSelect={handleIndicatorClick}
         size={indicatorSize}
-        sx={{
-          position: 'absolute',
-          bottom: '-48px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
       />
     </Box>
   );
