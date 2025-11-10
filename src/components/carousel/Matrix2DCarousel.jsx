@@ -57,6 +57,8 @@ function Matrix2DCarousel({
   const timeoutRef = useRef(null);
   const handleNextItemRef = useRef(null);
   const handlePrevItemRef = useRef(null);
+  const handleNextImageRef = useRef(null);
+  const handlePrevImageRef = useRef(null);
 
   // itemIndex를 ref로도 추적
   useEffect(() => {
@@ -198,7 +200,9 @@ function Matrix2DCarousel({
   useEffect(() => {
     handleNextItemRef.current = handleNextItem;
     handlePrevItemRef.current = handlePrevItem;
-  }, [handleNextItem, handlePrevItem]);
+    handleNextImageRef.current = handleNextImage;
+    handlePrevImageRef.current = handlePrevImage;
+  }, [handleNextItem, handlePrevItem, handleNextImage, handlePrevImage]);
 
   // === Cleanup: unmount 시 타임아웃 정리 ===
   useEffect(() => {
@@ -277,10 +281,12 @@ function Matrix2DCarousel({
 
   // === 터치 스와이프 핸들러 (모바일 전용) ===
   useEffect(() => {
+    let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
 
     const handleTouchStart = (e) => {
+      touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       touchStartTime = Date.now();
     };
@@ -290,16 +296,37 @@ function Matrix2DCarousel({
         return;
       }
 
+      const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
       const touchEndTime = Date.now();
+      const deltaX = touchStartX - touchEndX;
       const deltaY = touchStartY - touchEndY;
       const deltaTime = touchEndTime - touchStartTime;
 
-      if (Math.abs(deltaY) > 50 && deltaTime < 300) {
-        if (deltaY > 0) {
-          handleNextItemRef.current?.();
-        } else {
-          handlePrevItemRef.current?.();
+      // 스와이프 거리와 시간 체크
+      if (deltaTime < 300) {
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+
+        // 가로 스와이프가 세로보다 크면 이미지 전환
+        if (absX > absY && absX > 50) {
+          if (deltaX > 0) {
+            // 왼쪽으로 스와이프 → 다음 이미지
+            handleNextImageRef.current?.();
+          } else {
+            // 오른쪽으로 스와이프 → 이전 이미지
+            handlePrevImageRef.current?.();
+          }
+        }
+        // 세로 스와이프가 가로보다 크면 제품 전환
+        else if (absY > absX && absY > 50) {
+          if (deltaY > 0) {
+            // 위로 스와이프 → 다음 제품
+            handleNextItemRef.current?.();
+          } else {
+            // 아래로 스와이프 → 이전 제품
+            handlePrevItemRef.current?.();
+          }
         }
       }
     };
@@ -313,7 +340,7 @@ function Matrix2DCarousel({
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []); // ✅ dependency 제거 - ref만 사용
+  }, [handleNextImage, handlePrevImage]); // ✅ 이미지 핸들러 추가
 
   // 아이템이 없으면 렌더링하지 않음
   if (!currentItem) {
@@ -391,6 +418,7 @@ function Matrix2DCarousel({
           onClick={handlePrevImage}
           direction="left"
           size={arrowSize}
+          position={-4}
         />
 
         {/* 중앙 미디어 영역 - 2D 슬라이드 애니메이션 */}
@@ -448,7 +476,7 @@ function Matrix2DCarousel({
               top: 0,
               left: 0,
               right: 0,
-              height: { xs: '48px', md: '80px' },
+              height: { xs: '32px', md: '80px' },
               background: 'linear-gradient(to bottom, #ffffff, transparent)',
               pointerEvents: 'none',
               zIndex: 1,
@@ -462,7 +490,7 @@ function Matrix2DCarousel({
               bottom: 0,
               left: 0,
               right: 0,
-              height: { xs: '48px', md: '80px' },
+              height: { xs: '32px', md: '80px' },
               background: 'linear-gradient(to top, #ffffff, transparent)',
               pointerEvents: 'none',
               zIndex: 1,
@@ -476,7 +504,7 @@ function Matrix2DCarousel({
               top: 0,
               bottom: 0,
               left: 0,
-              width: { xs: '48px', md: '80px' },
+              width: { xs: '32px', md: '80px' },
               background: 'linear-gradient(to right, #ffffff, transparent)',
               pointerEvents: 'none',
               zIndex: 1,
@@ -490,7 +518,7 @@ function Matrix2DCarousel({
               top: 0,
               bottom: 0,
               right: 0,
-              width: { xs: '48px', md: '80px' },
+              width: { xs: '32px', md: '80px' },
               background: 'linear-gradient(to left, #ffffff, transparent)',
               pointerEvents: 'none',
               zIndex: 1,
@@ -503,6 +531,7 @@ function Matrix2DCarousel({
           onClick={handleNextImage}
           direction="right"
           size={arrowSize}
+          position={-4}
         />
       </Box>
 
