@@ -4,6 +4,7 @@ import GridContainer from '../GridContainer';
 import DynamicGrid from '../DynamicGrid';
 import ProductCard from '../ProductCard';
 import ProductDetailView from '../ProductDetailView';
+import products from '../../data/products';
 
 export default {
   title: '2. Components/Container/GridContainer',
@@ -234,52 +235,6 @@ const createCubeItems = (count = 24) => {
   }));
 };
 
-// 실제 제품 데이터
-const sampleProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    images: ['/src/assets/product/1-motion.mp4', '/src/assets/product/1-1.png'],
-    gender: 'male',
-    color: 'white',
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    images: ['/src/assets/product/2-motion.mp4', '/src/assets/product/2-1.png'],
-    gender: 'male',
-    color: 'black',
-  },
-  {
-    id: 3,
-    name: 'Product 3',
-    images: ['/src/assets/product/3-motion.mp4', '/src/assets/product/3-1.png'],
-    gender: 'female',
-    color: 'white',
-  },
-  {
-    id: 4,
-    name: 'Product 4',
-    images: ['/src/assets/product/4-motion.mp4', '/src/assets/product/4-1.png'],
-    gender: 'female',
-    color: 'black',
-  },
-  {
-    id: 5,
-    name: 'Product 5',
-    images: ['/src/assets/product/5-motion.mp4', '/src/assets/product/5-1.png'],
-    gender: 'male',
-    color: 'white',
-  },
-  {
-    id: 6,
-    name: 'Product 6',
-    images: ['/src/assets/product/6-motion.mp4', '/src/assets/product/6-1.png'],
-    gender: 'female',
-    color: 'black',
-  },
-];
-
 export const Default = {
   parameters: {
     docs: {
@@ -507,12 +462,12 @@ export const WithProducts = {
             columns={3}
             gap={24}
             wrapperRef={wrapperRef}
-            filteredProducts={sampleProducts}
+            filteredProducts={products.slice(0, 6)}
             onZoomChange={setIsZoomed}
             showDebug={false}
           >
             <DynamicGrid columns={3} gap={24}>
-              {sampleProducts.map(product => (
+              {products.slice(0, 6).map(product => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -558,7 +513,7 @@ export const WithProducts = {
 
             <ProductDetailView
               productId={selectedId}
-              filteredProducts={sampleProducts}
+              filteredProducts={products.slice(0, 6)}
               onProductChange={setSelectedId}
               onClose={() => setSelectedId(null)}
               config={config}

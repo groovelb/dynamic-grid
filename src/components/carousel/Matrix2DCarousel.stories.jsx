@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Matrix2DCarousel from './Matrix2DCarousel';
+import products from '../../data/products';
 
 export default {
   title: '2. Components/Carousel/Matrix2DCarousel',
@@ -183,40 +184,6 @@ Matrix2DCarousel 컴포넌트를 만들어주세요.
   tags: ['autodocs'],
 };
 
-// 실제 제품 데이터
-const sampleProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    images: ['/src/assets/product/1-motion.mp4', '/src/assets/product/1-1.png', '/src/assets/product/1-2.png'],
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    images: ['/src/assets/product/2-motion.mp4', '/src/assets/product/2-1.png', '/src/assets/product/2-2.png'],
-  },
-  {
-    id: 3,
-    name: 'Product 3',
-    images: ['/src/assets/product/3-motion.mp4', '/src/assets/product/3-1.png', '/src/assets/product/3-2.png'],
-  },
-  {
-    id: 4,
-    name: 'Product 4',
-    images: ['/src/assets/product/4-motion.mp4', '/src/assets/product/4-1.png', '/src/assets/product/4-2.png'],
-  },
-  {
-    id: 5,
-    name: 'Product 5',
-    images: ['/src/assets/product/5-motion.mp4', '/src/assets/product/5-1.png'],
-  },
-  {
-    id: 6,
-    name: 'Product 6',
-    images: ['/src/assets/product/6-motion.mp4', '/src/assets/product/6-1.png', '/src/assets/product/6-2.png'],
-  },
-];
-
 const WithProductsComponent = () => {
   const [selectedId, setSelectedId] = useState(1);
   const [isClosed, setIsClosed] = useState(false);
@@ -314,7 +281,7 @@ const WithProductsComponent = () => {
         paddingTop: '80px',
       }}>
         <Matrix2DCarousel
-          items={sampleProducts}
+          items={products.slice(0, 6)}
           initialItemId={selectedId}
           onItemChange={handleItemChange}
           onClose={handleClose}

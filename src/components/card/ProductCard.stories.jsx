@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ProductCard from '../ProductCard';
+import products from '../../data/products';
 
 export default {
   title: '2. Components/Card/ProductCard',
@@ -189,37 +190,6 @@ ProductCard 컴포넌트를 만들어주세요.
   tags: ['autodocs'],
 };
 
-const sampleProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    images: ['/src/assets/product/1-motion.mp4', '/src/assets/product/1-1.png'],
-    gender: 'male',
-    color: 'white',
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    images: ['/src/assets/product/2-motion.mp4', '/src/assets/product/2-1.png'],
-    gender: 'male',
-    color: 'black',
-  },
-  {
-    id: 3,
-    name: 'Product 3',
-    images: ['/src/assets/product/3-motion.mp4', '/src/assets/product/3-1.png'],
-    gender: 'female',
-    color: 'white',
-  },
-  {
-    id: 4,
-    name: 'Product 4',
-    images: ['/src/assets/product/4-motion.mp4', '/src/assets/product/4-1.png'],
-    gender: 'female',
-    color: 'black',
-  },
-];
-
 export const Default = {
   render: () => {
     const [clickedId, setClickedId] = useState(null);
@@ -230,7 +200,7 @@ export const Default = {
           width: '300px',
         }}>
           <ProductCard
-            product={sampleProducts[0]}
+            product={products[0]}
             onClick={(id) => {
               console.log('Clicked product:', id);
               setClickedId(id);

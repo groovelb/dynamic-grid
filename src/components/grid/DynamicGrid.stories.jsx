@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import DynamicGrid from '../DynamicGrid';
 import ProductCard from '../ProductCard';
+import products from '../../data/products';
 
 export default {
   title: '2. Components/Grid/DynamicGrid',
@@ -144,52 +145,6 @@ const createCubeItems = (count = 24) => {
   }));
 };
 
-// 실제 제품 데이터
-const sampleProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    images: ['/src/assets/product/1-motion.mp4', '/src/assets/product/1-1.png'],
-    gender: 'male',
-    color: 'white',
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    images: ['/src/assets/product/2-motion.mp4', '/src/assets/product/2-1.png'],
-    gender: 'male',
-    color: 'black',
-  },
-  {
-    id: 3,
-    name: 'Product 3',
-    images: ['/src/assets/product/3-motion.mp4', '/src/assets/product/3-1.png'],
-    gender: 'female',
-    color: 'white',
-  },
-  {
-    id: 4,
-    name: 'Product 4',
-    images: ['/src/assets/product/4-motion.mp4', '/src/assets/product/4-1.png'],
-    gender: 'female',
-    color: 'black',
-  },
-  {
-    id: 5,
-    name: 'Product 5',
-    images: ['/src/assets/product/5-motion.mp4', '/src/assets/product/5-1.png'],
-    gender: 'male',
-    color: 'white',
-  },
-  {
-    id: 6,
-    name: 'Product 6',
-    images: ['/src/assets/product/6-motion.mp4', '/src/assets/product/6-1.png'],
-    gender: 'female',
-    color: 'black',
-  },
-];
-
 // Shuffle 함수
 const shuffleArray = (array) => {
   const newArray = [...array];
@@ -275,7 +230,7 @@ export const WithProducts = {
     },
   },
   render: () => {
-    const [products, setProducts] = useState(sampleProducts);
+    const [shuffledProducts, setShuffledProducts] = useState(products.slice(0, 6));
     const [clickedId, setClickedId] = useState(null);
 
     return (
@@ -288,7 +243,7 @@ export const WithProducts = {
           gap: '12px',
         }}>
           <button
-            onClick={() => setProducts(shuffleArray(products))}
+            onClick={() => setShuffledProducts(shuffleArray(shuffledProducts))}
             style={{
               padding: '12px 24px',
               fontSize: '14px',
@@ -309,7 +264,7 @@ export const WithProducts = {
 
         {/* 그리드 */}
         <DynamicGrid columns={3} gap={24}>
-          {products.map(product => (
+          {shuffledProducts.map(product => (
             <ProductCard
               key={product.id}
               product={product}
