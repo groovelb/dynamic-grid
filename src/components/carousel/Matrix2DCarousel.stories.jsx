@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Matrix2DCarousel from './Matrix2DCarousel';
 
@@ -75,109 +75,119 @@ const sampleProducts = [
   },
 ];
 
-export const WithProducts = {
-  render: () => {
-    const [selectedId, setSelectedId] = useState(1);
-    const [isClosed, setIsClosed] = useState(false);
+const WithProductsComponent = () => {
+  const [selectedId, setSelectedId] = useState(1);
+  const [isClosed, setIsClosed] = useState(false);
 
-    if (isClosed) {
-      return (
-        <div style={{
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'system-ui',
-          fontSize: '18px',
-          color: '#666',
-        }}>
-          캐로셀이 닫혔습니다. (ESC 키로 닫힘)
-          <button
-            onClick={() => setIsClosed(false)}
-            style={{
-              marginLeft: '20px',
-              padding: '10px 20px',
-              backgroundColor: '#000',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'system-ui',
-            }}
-          >
-            다시 열기
-          </button>
-        </div>
-      );
-    }
+  const handleItemChange = useCallback((id) => {
+    setSelectedId(id);
+  }, []);
 
+  const handleClose = useCallback(() => {
+    setIsClosed(true);
+  }, []);
+
+  if (isClosed) {
     return (
       <div style={{
         width: '100vw',
         height: '100vh',
         display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#fff',
-        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'system-ui',
+        fontSize: '18px',
+        color: '#666',
       }}>
-        {/* 상단 안내 */}
-        <div style={{
-          padding: '20px 40px',
-          backgroundColor: '#f9f9f9',
-          borderBottom: '1px solid #e0e0e0',
-          fontFamily: 'system-ui',
-          fontSize: '13px',
-          color: '#666',
-        }}>
-          <p style={{ margin: '0 0 8px 0', fontWeight: '500', color: '#000' }}>
-            2D 매트릭스 캐로셀
-          </p>
-          <ul style={{ margin: '0', paddingLeft: '20px' }}>
-            <li>좌우 화살표: 제품의 착용샷 전환 (가로 네비게이션)</li>
-            <li>휠 또는 키보드 ↑↓: 제품 전환 (세로 네비게이션)</li>
-            <li>비디오는 자동 재생됩니다</li>
-            <li>ESC 키로 닫기</li>
-          </ul>
-        </div>
-
-        {/* 현재 상태 표시 */}
-        <div style={{
-          position: 'fixed',
-          top: '120px',
-          right: '20px',
-          padding: '12px 20px',
-          backgroundColor: '#000',
-          color: '#fff',
-          borderRadius: '4px',
-          fontFamily: 'system-ui',
-          fontSize: '14px',
-          zIndex: 1000,
-        }}>
-          현재: Product {selectedId}
-        </div>
-
-        {/* 캐로셀 */}
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingTop: '80px',
-        }}>
-          <Matrix2DCarousel
-            items={sampleProducts}
-            initialItemId={selectedId}
-            onItemChange={setSelectedId}
-            onClose={() => setIsClosed(true)}
-            config={{
-              viewWidth: '70vw',
-              arrowSize: 40,
-              arrowPosition: 20,
-              indicatorSize: 8,
-            }}
-          />
-        </div>
+        캐로셀이 닫혔습니다. (ESC 키로 닫힘)
+        <button
+          onClick={() => setIsClosed(false)}
+          style={{
+            marginLeft: '20px',
+            padding: '10px 20px',
+            backgroundColor: '#000',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'system-ui',
+          }}
+        >
+          다시 열기
+        </button>
       </div>
     );
-  },
+  }
+
+  return (
+    <div style={{
+      width: '100vw',
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#fff',
+      position: 'relative',
+    }}>
+      {/* 상단 안내 */}
+      <div style={{
+        padding: '20px 40px',
+        backgroundColor: '#f9f9f9',
+        borderBottom: '1px solid #e0e0e0',
+        fontFamily: 'system-ui',
+        fontSize: '13px',
+        color: '#666',
+      }}>
+        <p style={{ margin: '0 0 8px 0', fontWeight: '500', color: '#000' }}>
+          2D 매트릭스 캐로셀
+        </p>
+        <ul style={{ margin: '0', paddingLeft: '20px' }}>
+          <li>좌우 화살표: 제품의 착용샷 전환 (가로 네비게이션)</li>
+          <li>휠 또는 키보드 ↑↓: 제품 전환 (세로 네비게이션)</li>
+          <li>비디오는 자동 재생됩니다</li>
+          <li>ESC 키로 닫기</li>
+        </ul>
+      </div>
+
+      {/* 현재 상태 표시 */}
+      <div style={{
+        position: 'fixed',
+        top: '120px',
+        right: '20px',
+        padding: '12px 20px',
+        backgroundColor: '#000',
+        color: '#fff',
+        borderRadius: '4px',
+        fontFamily: 'system-ui',
+        fontSize: '14px',
+        zIndex: 1000,
+      }}>
+        현재: Product {selectedId}
+      </div>
+
+      {/* 캐로셀 */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: '80px',
+      }}>
+        <Matrix2DCarousel
+          items={sampleProducts}
+          initialItemId={selectedId}
+          onItemChange={handleItemChange}
+          onClose={handleClose}
+          config={{
+            viewWidth: '70vw',
+            arrowSize: 40,
+            arrowPosition: 20,
+            indicatorSize: 8,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const WithProducts = {
+  render: () => <WithProductsComponent />,
 };

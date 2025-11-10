@@ -20,15 +20,6 @@ import MediaRenderer from '../../common/media/MediaRenderer';
  *   - arrowSize: 화살표 버튼 크기 (기본값: 40)
  *   - arrowPosition: 화살표 위치 (기본값: 20)
  *   - indicatorSize: 인디케이터 크기 (기본값: 8)
- *
- * Example:
- * <Matrix2DCarousel
- *   items={products}
- *   initialItemId={selectedProductId}
- *   onItemChange={(id) => setSelectedProductId(id)}
- *   onClose={() => setSelectedProductId(null)}
- *   config={{ viewWidth: '80vw', arrowSize: 50 }}
- * />
  */
 function Matrix2DCarousel({
   items,
@@ -45,9 +36,11 @@ function Matrix2DCarousel({
 
   // === 2D 매트릭스 상태 관리 ===
   // 세로축: 아이템 인덱스
-  const [itemIndex, setItemIndex] = useState(
-    items.findIndex(item => item.id === initialItemId)
-  );
+  const [itemIndex, setItemIndex] = useState(() => {
+    const index = items.findIndex(item => item.id === initialItemId);
+    console.log('[useState init] itemIndex:', index, 'for initialItemId:', initialItemId);
+    return index;
+  });
 
   // 가로축: 각 아이템별 이미지 인덱스 저장 (아이템 ID를 키로 사용)
   const [imageIndexMap, setImageIndexMap] = useState({});
@@ -57,25 +50,47 @@ function Matrix2DCarousel({
   const [imageDirection, setImageDirection] = useState(0);
   const [lastNavigationType, setLastNavigationType] = useState('horizontal');
 
-  // 전환 중 플래그 (빠른 스크롤 방지)
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // 전환 중 플래그 (빠른 스크롤 방지) - ref만 사용
   const isTransitioningRef = useRef(false);
 
   // 비디오 재생 제어
   const videoRef = useRef(null);
   const isInitialMount = useRef(true);
 
+  // itemIndex를 ref로도 추적 (useCallback에서 최신 값 참조용)
+  const itemIndexRef = useRef(itemIndex);
+  useEffect(() => {
+    console.log('[useEffect:itemIndexRef] Updating ref:', itemIndex);
+    itemIndexRef.current = itemIndex;
+  }, [itemIndex]);
+
+  // onItemChange를 ref로 관리 (dependency 이슈 방지)
+  const onItemChangeRef = useRef(onItemChange);
+  useEffect(() => {
+    onItemChangeRef.current = onItemChange;
+  }, [onItemChange]);
+
   // === 현재 아이템 및 이미지 인덱스 계산 ===
   const currentItem = items[itemIndex];
   const currentImageIndex = imageIndexMap[currentItem?.id] || 0;
   const currentMediaSrc = currentItem?.images[currentImageIndex];
 
+  console.log('[render] currentItem:', currentItem?.id, 'itemIndex:', itemIndex);
+
   // itemIndex 변경 시 부모에게 알림
   useEffect(() => {
-    if (currentItem && onItemChange) {
-      onItemChange(currentItem.id);
+    const item = items[itemIndex];
+    console.log('[useEffect:notify] itemIndex changed:', {
+      itemIndex,
+      itemId: item?.id,
+      hasCallback: !!onItemChangeRef.current
+    });
+
+    if (item && onItemChangeRef.current) {
+      console.log('[useEffect:notify] Calling onItemChange with:', item.id);
+      onItemChangeRef.current(item.id);
     }
-  }, [itemIndex]);
+  }, [itemIndex, items]);
 
   // === 가로축 네비게이션 (이미지 변경) ===
   const handleNextImage = useCallback(() => {
@@ -116,38 +131,52 @@ function Matrix2DCarousel({
 
   // === 세로축 네비게이션 (아이템 변경) ===
   const handleNextItem = useCallback(() => {
-    if (isTransitioningRef.current || itemIndex >= items.length - 1) {
+    console.log('[handleNextItem] Called:', {
+      isTransitioning: isTransitioningRef.current,
+      currentIndex: itemIndexRef.current,
+      maxIndex: items.length - 1
+    });
+
+    if (isTransitioningRef.current || itemIndexRef.current >= items.length - 1) {
+      console.log('[handleNextItem] Blocked');
       return;
     }
 
+    console.log('[handleNextItem] Executing');
     setVerticalDirection(1);
     setLastNavigationType('vertical');
-    setIsTransitioning(true);
     isTransitioningRef.current = true;
     setItemIndex(prev => prev + 1);
 
     setTimeout(() => {
-      setIsTransitioning(false);
+      console.log('[handleNextItem] Transition complete');
       isTransitioningRef.current = false;
     }, 300);
-  }, [itemIndex, items.length]);
+  }, [items.length]);
 
   const handlePrevItem = useCallback(() => {
-    if (isTransitioningRef.current || itemIndex <= 0) {
+    console.log('[handlePrevItem] Called:', {
+      isTransitioning: isTransitioningRef.current,
+      currentIndex: itemIndexRef.current,
+      minIndex: 0
+    });
+
+    if (isTransitioningRef.current || itemIndexRef.current <= 0) {
+      console.log('[handlePrevItem] Blocked');
       return;
     }
 
+    console.log('[handlePrevItem] Executing');
     setVerticalDirection(-1);
     setLastNavigationType('vertical');
-    setIsTransitioning(true);
     isTransitioningRef.current = true;
     setItemIndex(prev => prev - 1);
 
     setTimeout(() => {
-      setIsTransitioning(false);
+      console.log('[handlePrevItem] Transition complete');
       isTransitioningRef.current = false;
     }, 300);
-  }, [itemIndex]);
+  }, []);
 
   // === 키보드 이벤트 핸들러 ===
   useEffect(() => {
@@ -179,24 +208,38 @@ function Matrix2DCarousel({
 
       e.preventDefault();
 
+      console.log('[Matrix2DCarousel] Wheel event:', {
+        deltaY: e.deltaY,
+        isTransitioning: isTransitioningRef.current,
+        currentIndex: itemIndexRef.current,
+        itemsLength: items.length
+      });
+
       if (isTransitioningRef.current) {
+        console.log('[Matrix2DCarousel] Blocked: transitioning');
         return;
       }
 
       if (Math.abs(e.deltaY) >= MIN_DISTANCE) {
         if (e.deltaY > 0) {
           // 다음 아이템으로 (아래로 스크롤)
+          console.log('[Matrix2DCarousel] Calling handleNextItem');
           handleNextItem();
         } else {
           // 이전 아이템으로 (위로 스크롤)
+          console.log('[Matrix2DCarousel] Calling handlePrevItem');
           handlePrevItem();
         }
       }
     };
 
+    console.log('[Matrix2DCarousel] Adding wheel listener');
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, [handleNextItem, handlePrevItem]);
+    return () => {
+      console.log('[Matrix2DCarousel] Removing wheel listener');
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [handleNextItem, handlePrevItem, items.length]);
 
   // === 터치 스와이프 핸들러 (모바일 전용) ===
   useEffect(() => {
