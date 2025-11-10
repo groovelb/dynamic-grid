@@ -340,7 +340,7 @@ function Matrix2DCarousel({
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [handleNextImage, handlePrevImage]); // ✅ 이미지 핸들러 추가
+  }, []); // ✅ dependency 제거 - ref만 사용
 
   // 아이템이 없으면 렌더링하지 않음
   if (!currentItem) {
