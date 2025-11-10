@@ -26,6 +26,63 @@ export default {
 | **children** | ReactNode | - | 그리드에 배치할 아이템들 (ProductCard 등) |
 | **columns** | number | 8 | 그리드 컬럼 수 |
 | **gap** | number | 48 | 그리드 간격 (px) |
+
+---
+
+### AI 프롬프트 - 컴포넌트 재생성
+
+\`\`\`
+DynamicGrid 컴포넌트를 만들어주세요.
+
+컴포넌트 역할:
+- 제품 카드를 반응형 그리드로 배치
+- 화면 크기와 줌 레벨에 따라 동적으로 컬럼 수 조정
+- 부모가 전달한 columns, gap 값으로 CSS Grid 생성
+
+사용자 인터랙션:
+
+1. 그리드 배치
+   - 부모(MainPage)가 계산한 columns 수만큼 제품 카드 배치
+   - CSS Grid로 자동 정렬 및 줄바꿈
+   - gap 값으로 카드 간 일정한 간격 유지
+
+2. 동적 재배열
+   - columns 값 변경 시 자동으로 그리드 재구성
+   - 필터 적용 시 보이는 카드만 재배치
+   - Framer Motion의 layout animation으로 부드러운 전환
+
+필요한 Props:
+
+필수 Props:
+- children: 그리드에 배치할 아이템들 (ProductCard 컴포넌트들)
+  - React children으로 전달받음
+
+- columns: 그리드 컬럼 수
+  - 부모가 breakpoint와 zoom level에 따라 계산
+  - 일반적으로 3-8 사이 값
+
+- gap: 그리드 간격 (px 단위)
+  - 카드 사이의 여백
+  - 일반적으로 16-48px
+
+부모 컴포넌트와의 관계:
+
+- MainPage: breakpoint별 최적 columns 계산하여 전달
+- GridContainer: 이 컴포넌트를 감싸서 zoom 애니메이션 제공
+- ProductCard: children으로 전달되어 그리드 셀에 배치됨
+
+구현 포인트:
+- CSS Grid를 사용하여 레이아웃 구성
+- grid-template-columns: repeat(columns, 1fr)로 동적 컬럼
+- gap 속성으로 간격 제어
+- width: 100%로 부모 컨테이너에 맞춤
+- children의 key 속성으로 아이템 추적 (layout animation용)
+
+엣지 케이스:
+- columns가 1일 때: 세로로 한 줄 배치
+- children이 없을 때: 빈 그리드 표시
+- children 개수가 columns보다 적을 때: 남은 공간 비워둠
+\`\`\`
         `,
       },
     },
@@ -144,6 +201,11 @@ const shuffleArray = (array) => {
 };
 
 export const Default = {
+  parameters: {
+    docs: {
+      disable: true,
+    },
+  },
   render: () => {
     const [items, setItems] = useState(createCubeItems(24));
 
@@ -207,6 +269,11 @@ export const Default = {
 };
 
 export const WithProducts = {
+  parameters: {
+    docs: {
+      disable: true,
+    },
+  },
   render: () => {
     const [products, setProducts] = useState(sampleProducts);
     const [clickedId, setClickedId] = useState(null);

@@ -34,6 +34,101 @@ export default {
 | **onZoomChange** | function | - | 줌 상태 변경 콜백 |
 | **showGrid** | boolean | false | true면 그리드 라인을 표시합니다 |
 | **showDebug** | boolean | false | true면 디버그 패널을 표시합니다 |
+
+---
+
+### AI 프롬프트 - 컴포넌트 재생성
+
+\`\`\`
+GridContainer 컴포넌트를 만들어주세요.
+
+컴포넌트 역할:
+- 그리드 전체에 Transform 기반 줌 애니메이션 제공
+- 제품 카드 클릭 시 해당 카드를 화면 중앙으로 확대
+- DynamicGrid를 감싸서 zoom in/out 효과 적용
+
+사용자 인터랙션:
+
+1. 제품 선택 시 줌 인
+   - ProductCard 클릭 → selectedProductId 업데이트
+   - 선택된 카드의 위치 계산 (행, 열 인덱스)
+   - Transform(scale, translate)으로 화면 중앙 배치
+   - transformOrigin을 선택된 카드 위치로 설정
+   - CSS transition으로 부드러운 확대 (duration: 0.6s)
+
+2. 그리드 뷰로 복귀
+   - ESC 키 또는 닫기 버튼 → selectedProductId null로 설정
+   - Transform을 초기값으로 복원
+   - 역방향 애니메이션으로 줌아웃
+
+필요한 Props:
+
+필수 Props:
+- children: DynamicGrid 컴포넌트
+  - 그리드로 배치된 제품 카드들
+
+- selectedProductId: 선택된 제품 ID (null이면 줌아웃 상태)
+  - 부모(MainPage)가 관리
+
+- columns: 그리드 컬럼 수
+  - 선택된 카드의 열 위치 계산에 사용
+
+- gap: 그리드 간격 (px)
+  - Transform 계산 시 간격 보정에 사용
+
+- wrapperRef: 부모 컨테이너의 ref
+  - 화면 중앙 위치 계산에 필요
+  - wrapperRef.current.getBoundingClientRect()로 뷰포트 정보 획득
+
+- filteredProducts: 현재 표시 중인 제품 배열
+  - 선택된 제품의 인덱스 찾기
+
+- onZoomChange: 줌 상태 변경 콜백
+  - 줌 인/아웃 시 부모에게 알림
+  - 오버레이 표시/숨김 제어용
+
+선택적 Props:
+- showGrid: 그리드 라인 표시 여부 (개발용)
+- showDebug: 디버그 정보 표시 여부 (개발용)
+
+부모 컴포넌트와의 관계:
+
+- MainPage: selectedProductId 상태 관리 및 전달
+- DynamicGrid: children으로 감싸서 zoom transform 적용
+- ProductDetailView: 줌 인 시 함께 표시되는 오버레이 뷰
+
+구현 핵심 로직:
+
+1. 선택된 카드 위치 계산
+   - 카드의 행 인덱스: Math.floor(productIndex / columns)
+   - 카드의 열 인덱스: productIndex % columns
+
+2. Transform 계산
+   - 카드의 중심 좌표 계산 (카드 크기, gap 고려)
+   - 뷰포트 중심 좌표 계산 (wrapperRef 사용)
+   - 필요한 translate 거리 계산
+   - scale 값 설정 (확대 배율)
+
+3. TransformOrigin 설정
+   - 선택된 카드의 위치를 기준으로 확대
+   - 픽셀 단위로 정확한 위치 지정
+
+4. 애니메이션
+   - CSS transition 사용 (transform 0.6s ease)
+   - 부드러운 가속/감속 곡선
+
+엣지 케이스:
+- selectedProductId가 filteredProducts에 없는 경우: 줌아웃 처리
+- wrapperRef가 없는 경우: transform 적용 안 함
+- 첫 번째 카드 선택: 좌상단에서 확대
+- 마지막 카드 선택: 우하단에서 확대
+- 필터 변경으로 선택된 제품 사라짐: 자동 줌아웃
+
+성능 고려사항:
+- Transform 사용으로 GPU 가속
+- Reflow 없이 Repaint만 발생
+- CSS transition으로 JavaScript 개입 최소화
+\`\`\`
         `,
       },
     },
@@ -186,6 +281,11 @@ const sampleProducts = [
 ];
 
 export const Default = {
+  parameters: {
+    docs: {
+      disable: true,
+    },
+  },
   render: () => {
     const wrapperRef = useRef(null);
     const [selectedId, setSelectedId] = useState(null);
@@ -341,6 +441,11 @@ export const Default = {
 };
 
 export const WithProducts = {
+  parameters: {
+    docs: {
+      disable: true,
+    },
+  },
   render: () => {
     const wrapperRef = useRef(null);
     const [selectedId, setSelectedId] = useState(null);

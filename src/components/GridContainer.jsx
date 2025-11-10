@@ -20,19 +20,6 @@ import DebugPanel from './DebugPanel';
  * @param {Array} filteredProducts - 현재 필터링된 제품 배열 [Required]
  * @param {function} onZoomChange - 줌 상태 변경 콜백 [Optional]
  * @param {boolean} showDebug - 디버그 모드 표시 여부 [Optional]
- *
- * Example usage:
- * <GridContainer
- *   selectedProductId="1"
- *   columns={8}
- *   gap={48}
- *   wrapperRef={wrapperRef}
- *   filteredProducts={products}
- *   onZoomChange={handleZoomChange}
- *   showDebug={true}
- * >
- *   <DynamicGrid ... />
- * </GridContainer>
  */
 function GridContainer({ children, selectedProductId, columns, gap = 48, wrapperRef, filteredProducts, onZoomChange, showDebug = false }) {
   const containerRef = useRef(null);
