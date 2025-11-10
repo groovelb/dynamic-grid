@@ -446,33 +446,11 @@ GridContainer 업데이트:
   tags: ['autodocs'],
 };
 
-// 스토리북 전용 Wrapper - 환경 격리
-const StorybookWrapper = ({ children }) => {
-  return (
-    <div
-      style={{
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-      }}
-    >
-      {children}
-    </div>
-  );
-};
-
 export const Default = {
   parameters: {
     docs: {
       disable: true,
     },
   },
-  render: () => (
-    <StorybookWrapper>
-      <MainPage />
-    </StorybookWrapper>
-  ),
+  render: () => <MainPage />,
 };
